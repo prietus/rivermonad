@@ -624,15 +624,23 @@ renderBody = do
   forM_ (S.toList centre) $ \w -> case M.lookup w infos of
     Just i | Just (dw, dh) <- wiDims i, M.member w (W.floating ws) -> do
       let Rectangle sx sy sw sh = sdRect (screenOfWindow w ws)
-          fw = dw + 2 * bw
-          fh = dh + 2 * bw
+          -- A window that picked a size bigger than the screen (a GTK file
+          -- chooser on a small or scaled output) is shrunk to fit.
+          fw = min sw (dw + 2 * bw)
+          fh = min sh (dh + 2 * bw)
           x = sx + (sw - fw) `div` 2
           y = sy + (sh - fh) `div` 2
+          fits = fw == dw + 2 * bw && fh == dh + 2 * bw
       setFloatGeometry w (Rectangle x y fw fh)
       io (riverNodeV1SetPosition c (wiNode i) (fi (x + bw)) (fi (y + bw)))
       modify $ \s -> s { needsCenter = S.delete w (needsCenter s) }
-      -- Its proposal was (0,0); make the next manage sequence propose the real size.
+      -- Its proposal was (0,0). The next manage sequence proposes the size
+      -- of the float: nothing to send if the window fits, the shrunk size
+      -- (in a manage sequence asked for right now) if it does not.
       modifyInfo w (\i' -> i' { wiProposed = Just (dw, dh) })
+      unless fits $ do
+        wm <- asks (gWm . globals)
+        io (riverWindowManagerV1ManageDirty c wm)
     Just _ | not (M.member w (W.floating ws)) ->
       modify $ \s -> s { needsCenter = S.delete w (needsCenter s) }
     _ -> pure ()
