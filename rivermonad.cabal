@@ -15,7 +15,9 @@ category:           System
 build-type:         Simple
 extra-doc-files:    README.md
 data-files:         examples/rivermonad.hs
-extra-source-files: protocol/*.xml, contrib/session/*, tools/gen-protocol.py, tools/regen.sh, cbits/*.c
+extra-source-files: protocol/*.xml, tools/gen-protocol.py, tools/regen.sh, cbits/*.c,
+                    contrib/session/README.md, contrib/session/init, contrib/session/install.sh,
+                    contrib/session/river-session, contrib/session/rivermonad.desktop
 
 flag dynamic-config
   description: Link the user configuration dynamically (-dynamic), for
