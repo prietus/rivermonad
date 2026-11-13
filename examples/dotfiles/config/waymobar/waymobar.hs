@@ -4,94 +4,112 @@
 -- waymobar rebuilds this file when it changes; check it with
 -- `waymobar --recompile`. Reload: `pkill -x waymobar-aarch6; waymobar &`
 -- Docs: https://github.com/prietus/waymobar
-import Data.List (stripPrefix)
+import Data.List (isInfixOf, stripPrefix)
 import Data.Maybe (fromMaybe)
 
 import Waymobar
 
--- Nord, like the rivermonad borders
-nord0, nord1, nord2, nord3, nord4, nord8, nord9, nord11, nord13 :: String
-nord0 = "#2e3440"; nord1 = "#3b4252"; nord2 = "#434c5e"; nord3 = "#4c566a"
-nord4 = "#d8dee9"; nord8 = "#88c0d0"; nord9 = "#81a1c1"; nord11 = "#bf616a"
-nord13 = "#ebcb8b"
+-- Catppuccin Mocha (same palette as rivermonad's borders, foot, fuzzel, mako)
+base, surface0, surface1, overlay0, subtext, text', mauve, blue, sky, teal,
+  green, yellow, peach, red, pink :: String
+base     = "#1e1e2e"; surface0 = "#313244"; surface1 = "#45475a"
+overlay0 = "#6c7086"; subtext  = "#a6adc8"; text'    = "#cdd6f4"
+mauve    = "#cba6f7"; blue     = "#89b4fa"; sky      = "#89dceb"
+teal     = "#94e2d5"; green    = "#a6e3a1"; yellow   = "#f9e2af"
+peach    = "#fab387"; red      = "#f38ba8"; pink     = "#f5c2e7"
 
 ------------------------------------------------------------------------------
 -- Pill theme: a transparent bar where every widget is a rounded "island".
+-- The bar is 28 px high and floats 6 px from the screen edges (the same gap
+-- rivermonad leaves between windows); a pill fills the bar's height.
+-- Icons are colour emoji (Noto Color Emoji, through pango's font fallback),
+-- except the workspaces, CPU and memory, which use Nerd Font glyphs.
 
--- | The look of every pill.
+-- | The look of every pill: slightly translucent, no border.
 pill :: Style
 pill = noStyle
-  { styleBg      = Just nord0
-  , styleBorder  = Just (1, nord2)
-  , styleRadius  = Just 12
-  , styleMargin  = Just (3, 0)       -- (vertical, horizontal): 3 px above and below
-  , stylePadding = Just 10           -- room between the text and the rounded ends
+  { styleBg      = Just (base ++ "e6")
+  , styleRadius  = Just 14
+  , stylePadding = Just 13
   }
 
 -- | Pills that react to the pointer (the clickable ones).
 clickablePill :: Style
-clickablePill = pill { styleHover = Just noStyle { styleBg = Just nord1, styleBorder = Just (1, nord3) } }
+clickablePill = pill { styleHover = Just noStyle { styleBg = Just surface0 } }
 
 -- | Put a widget in its own pill. 'baseStyle' keeps the widget's own colours.
 inPill, inClickablePill :: Widget -> Widget
 inPill = baseStyle pill
 inClickablePill = baseStyle clickablePill
 
--- | The clock: an accent-coloured pill.
-accentPill :: Style
-accentPill = pill { styleBg = Just nord8, styleFg = Just nord0, styleBorder = Nothing }
-
 main :: IO ()
 main = waymobar def
-  { font = "monospace 10"
-  , barHeight = 30
-  , margins = (0, 1, 0, 1)   -- same 1 px side gap as rivermonad's gapsWithEdge 1
+  { font = "Inter Medium 10"
+  , barHeight = 28
+  , margins = (6, 6, 0, 6)   -- floating: same 6 px as rivermonad's gapsWithEdge 6
   , bgColor = "#00000000"    -- transparent: only the pills are drawn
-  , fgColor = nord4
+  , fgColor = text'
+  , popoverBg = Just (base ++ "f7")   -- menus and hover panels: nearly opaque
+  , popoverRadius = 14
+  , menuBorder = surface1
+  , menuHighlight = surface0
   , widgetSpacing = 6
-  , edgePadding = 2
+  , edgePadding = 0
   , left =
       [ myWorkspaces
-      , inClickablePill (colored nord9 (layoutName shortLayout))
+      , inClickablePill (layoutName layoutLabel)
       ]
-  , center = [ inPill (windowTitle 80) ]
+  , center = [ inPill (colored subtext (windowTitle 80)) ]
   , right =
       [ inClickablePill media
-      , inPill net
+      , inClickablePill myNetwork
+      , inClickablePill myWeather
       , inClickablePill myVolume
-      , inPill (cpu (\p -> icCpu ++ warn 80 p (show p ++ "%")))
-      , inPill (memory (\p -> icMem ++ warn 85 p (show p ++ "%")))
-      , inPill (battery (\p st -> batteryIcon p st ++ warn' (p <= 15 && st /= "Charging") (show p ++ "%")))
+      , inPill (cpu (\p -> ic peach icCpu ++ warn 80 p (num (show p ++ "%"))))
+      , inPill (memory (\p -> ic yellow icMem ++ warn 85 p (num (show p ++ "%"))))
+      , inPill (battery (\p st -> em (batteryIcon p st)
+                                    ++ warn' (p <= 15 && st /= "Charging") (num (show p ++ "%"))))
       -- one pill around all the tray icons
-      , groupStyle pill { stylePadding = Just 6 } (tray defaultTray { traySymbolicColor = nord4 })
-      , withStyle accentPill (clock (icDate ++ "%a %d %b  " ++ icClock ++ "%H:%M"))
+      , groupStyle pill { stylePadding = Just 8 } (tray defaultTray { traySymbolicColor = text' })
+      , inPill (markup clockMarkup (clock "%a %d %b|%H:%M"))
         -- log out: asks to confirm, closes every window, then back to GDM
-      , inClickablePill (colored nord11 (logoutButton "\xf011"))   -- nf-fa-power_off
+      , inClickablePill (colored red (logoutButton "<span size='larger'>⏻</span>"))
       ]
   }
 
--- Nerd Font icons (the "Symbols Nerd Font" in ~/.local/share/fonts; any
--- glyph from https://www.nerdfonts.com/cheat-sheet works). Each ends with
--- a space to separate it from the text.
-icCpu, icMem, icDate, icClock, icBolt :: String
-icCpu   = "\xf4bc "   -- nf-oct-cpu
-icMem   = "\xefc5 "   -- nf-fa-memory
-icDate  = "\xf073 "   -- nf-fa-calendar
-icClock = "\xf017 "   -- nf-fa-clock
-icBolt  = "\xf0e7"    -- nf-fa-bolt
+-- | An emoji (slightly larger than the text) followed by a space.
+em :: String -> String
+em e = "<span size='larger'>" ++ e ++ "</span>  "
 
--- Battery level icon (nf-fa-battery_*), with a bolt when charging.
+-- | A coloured Nerd Font glyph followed by a space.
+ic :: String -> String -> String
+ic color glyph = "<span size='larger' foreground='" ++ color ++ "'>" ++ glyph ++ "</span>  "
+
+-- Nerd Font icons (the "Symbols Nerd Font"; any glyph from
+-- https://www.nerdfonts.com/cheat-sheet works).
+icCpu, icMem :: String
+icCpu = "\xf2db"    -- nf-fa-microchip
+icMem = "\xf035b"   -- nf-md-memory
+
+-- | Tabular figures, so the pills don't change width as the numbers do.
+num :: String -> String
+num s = "<span font_features='tnum'>" ++ s ++ "</span>"
+
+-- | 'clock' escapes its text, so the icons and the bold time are added
+-- afterwards: "Thu 12 Nov|20:37" is split at the bar.
+clockMarkup :: String -> String
+clockMarkup s = em "📅" ++ day ++ "    " ++ em "🕒" ++ num ("<b>" ++ drop 1 time ++ "</b>")
+  where (day, time) = break (== '|') s
+
+-- Battery: 🔋, 🪫 when low, with ⚡ while charging.
 batteryIcon :: Int -> String -> String
-batteryIcon p st = (if st == "Charging" then icBolt else "") ++ level ++ " "
-  where
-    level | p >= 90 = "\xf240" | p >= 60 = "\xf241" | p >= 35 = "\xf242"
-          | p >= 10 = "\xf243" | otherwise = "\xf244"
+batteryIcon p st = (if st == "Charging" then "⚡" else "") ++ (if p <= 15 then "🪫" else "🔋")
 
--- Icons in front of the named workspaces.
+-- Nerd Font icons in front of the named workspaces.
 wsIcon :: String -> String
-wsIcon "web"  = "\xf269 "   -- nf-fa-firefox
-wsIcon "code" = "\xf121 "   -- nf-fa-code
-wsIcon "term" = "\xf120 "   -- nf-fa-terminal
+wsIcon "web"  = em "\xf269"   -- nf-fa-firefox
+wsIcon "code" = em "\xf121"   -- nf-fa-code
+wsIcon "term" = em "\xf120"   -- nf-fa-terminal
 wsIcon _      = ""
 
 -- web/code/term always; numbered workspaces only when they have windows or
@@ -102,23 +120,29 @@ myWorkspaces = workspaces defaultWorkspaces
       if wsName w `elem` ["web", "code", "term"] || wsWindows w > 0 || wsVisible w
         then wsIcon (wsName w) ++ escape (wsName w)
         else ""
-  , wsPadding = 8
+  , wsPadding = 11
     -- each workspace is a small pill inside the big one
-  , focusedStyle = wsPill { styleFg = Just nord0, styleBg = Just nord8 }
-  , activeStyle  = wsPill { styleBg = Just nord2 }                       -- on this monitor
-  , visibleStyle = wsHover { styleFg = Just nord13 }                     -- on the other monitor
-  , hiddenStyle  = wsHover
-  , emptyStyle   = wsHover { styleFg = Just nord3 }
+  , focusedStyle = wsPill { styleFg = Just base, styleBg = Just mauve }
+  , activeStyle  = wsPill { styleBg = Just surface1 }                    -- on this monitor
+  , visibleStyle = wsHover { styleFg = Just yellow }                     -- on the other monitor
+  , hiddenStyle  = wsHover { styleFg = Just subtext }
+  , emptyStyle   = wsHover { styleFg = Just overlay0 }
   }
   & groupStyle pill { stylePadding = Just 3 }   -- the big pill around them
   where
-    wsPill = noStyle { styleRadius = Just 9, styleMargin = Just (6, 1) }
-    wsHover = wsPill { styleHover = Just noStyle { styleBg = Just nord1 } }
+    wsPill = noStyle { styleRadius = Just 11, styleMargin = Just (3, 1) }
+    wsHover = wsPill { styleHover = Just noStyle { styleBg = Just surface0 } }
     w & f = f w
 
--- "Spacing Tall" -> "Tall", "Mirror Tall" stays.
-shortLayout :: String -> String
-shortLayout l = "[" ++ fromMaybe l (stripPrefix "Spacing " l) ++ "]"
+-- The layout as an emoji plus its name ("Spacing Tall" -> "Tall").
+layoutLabel :: String -> String
+layoutLabel l = em glyph ++ "<span foreground='" ++ subtext ++ "'>" ++ escape name ++ "</span>"
+  where
+    name = fromMaybe l (stripPrefix "Spacing " l)
+    glyph | "Full" `isInfixOf` name     = "🖥️"
+          | "Mirror" `isInfixOf` name   = "🔃"
+          | "ThreeCol" `isInfixOf` name = "🏛️"
+          | otherwise                   = "🪟"
 
 -- Volume of the default output, live through pipewire-pulse: click mutes,
 -- the wheel changes it (up to 100%).
@@ -126,29 +150,54 @@ myVolume :: Widget
 myVolume = volume $ \case
   Nothing -> ""
   Just v
-    | volMuted v -> "<span foreground='" ++ nord3 ++ "'>\xf026 muted</span>"   -- nf-fa-volume_off
-    | otherwise  -> (if volPercent v < 50 then "\xf027 " else "\xf028 ") ++ show (volPercent v) ++ "%"
+    | volMuted v -> em "🔇" ++ "<span foreground='" ++ overlay0 ++ "'>muted</span>"
+    | otherwise  -> em (if volPercent v < 50 then "🔉" else "🔊") ++ num (show (volPercent v) ++ "%")
 
--- Network: Wi-Fi name and signal, or the wired IP address.
-net :: Widget
-net = network 3 $ \case
-  Nothing -> "<span foreground='" ++ nord3 ++ "'>\xf127 offline</span>"           -- nf-fa-chain_broken
-  Just n -> case netKind n of
-    Wifi -> "\xf1eb " ++ maybe "wifi" escape (netName n)                         -- nf-fa-wifi
-              ++ maybe "" (\s -> " " ++ show s ++ "%") (netSignal n)
-    _    -> "\xf0e8 " ++ maybe (netInterface n) id (netAddress n)                -- nf-fa-sitemap
+-- The connection: the Wi-Fi network (or the wired interface). With the
+-- pointer on it, a panel shows the details (band, addresses, router, link
+-- speed, traffic); a click opens the Wi-Fi menu (networks in range, radio
+-- on/off), like the one of macOS.
+myNetwork :: Widget
+myNetwork = wifiMenu $ networkHover 3 label (maybe "" networkDetails)
+  where
+    label Nothing = em "🚫" ++ "<span foreground='" ++ overlay0 ++ "'>offline</span>"
+    label (Just n)
+      | netKind n == Wifi = em "📶" ++ escape (fromMaybe "Wi-Fi" (netName n))
+      | otherwise         = em "🔌" ++ escape (netInterface n)
+
+-- The weather (Open-Meteo), located from the public IP address; pin it with
+-- `weatherLocation = City "Sevilla"` or `Coords 37.38 (-5.98)`. Click
+-- refreshes; with the pointer on it, a panel shows the details.
+myWeather :: Widget
+myWeather = weather defaultWeather { weatherHover = details } $ \case
+  Nothing -> ""
+  Just w -> em (weatherEmoji w) ++ num (show (weatherTemp w) ++ "°")
+  where
+    -- The panel: the temperature in big, the place and the sky, and a
+    -- small grid with today's extremes, the humidity and the wind.
+    details w = "<span line_height='1.3'>"
+      ++ "<span size='220%'>" ++ weatherEmoji w ++ " <b>" ++ num (show (weatherTemp w) ++ "°") ++ "</b></span>\n"
+      ++ (if null (weatherPlace w) then "" else "<b>" ++ escape (weatherPlace w) ++ "</b>\n")
+      ++ dim (escape (weatherDescription w) ++ " · feels like " ++ show (weatherFeelsLike w) ++ "°") ++ "\n"
+      ++ "<span size='40%'> </span>\n"
+      ++ cell "⬆️" (show (weatherTempMax w) ++ "°") ++ cell "⬇️" (show (weatherTempMin w) ++ "°") ++ "\n"
+      ++ cell "💧" (show (weatherHumidity w) ++ "%") ++ cell "💨" (show (weatherWind w) ++ " km/h")
+      ++ "</span>"
+    -- an emoji and its value; the tab lines the second column up
+    cell e v = e ++ "  " ++ num v ++ "\t"
+    dim s = "<span foreground='" ++ subtext ++ "'>" ++ s ++ "</span>"
 
 -- The current media player: left click play/pause, right click next,
 -- middle click previous. Hidden when nothing is playing or paused.
 media :: Widget
-media = colored nord9 $ mpris $ \m ->
+media = mpris $ \m ->
   if mediaStatus m == Stopped then "" else
-    (if mediaStatus m == Playing then "\xf04b " else "\xf04c ")             -- nf-fa-play / pause
+    em (if mediaStatus m == Playing then "▶️" else "⏸️")
       ++ escape (shorten 40 (if null (mediaArtist m) then mediaTitle m else mediaArtist m ++ " - " ++ mediaTitle m))
 
 warn :: Int -> Int -> String -> String
 warn limit p = warn' (p >= limit)
 
 warn' :: Bool -> String -> String
-warn' True s = "<span foreground='" ++ nord11 ++ "'>" ++ s ++ "</span>"
+warn' True s = "<span foreground='" ++ red ++ "'>" ++ s ++ "</span>"
 warn' False s = s

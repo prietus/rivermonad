@@ -29,6 +29,6 @@ done
 
 if [ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/wallpaper" ]; then
   echo
-  echo "Pick a wallpaper (swaybg is started by rivermonad.hs):"
+  echo "Pick a wallpaper (bgmonad, started by rivermonad.hs, shows it):"
   echo "  ln -sfn /usr/share/backgrounds/<image> ~/.config/wallpaper"
 fi

@@ -11,11 +11,11 @@
 # Each "profile" applies when exactly its monitors are connected.
 
 profile vm {
-    # No fixed "mode": the VM window can change size, and a mode that no
-    # longer exists makes kanshi reject the whole profile. The preferred
-    # (native) resolution is used instead.
+    # A fixed "mode" (4K at 60 Hz). If the VM window changes size and the
+    # mode no longer exists, kanshi rejects the whole profile: remove
+    # "mode ..." to use the preferred (native) resolution instead.
     # Zoom: 2 is like macOS on Retina; higher = bigger, lower = more room.
-    output Virtual-1 scale 2
+    output Virtual-1 mode 3840x2160@60 scale 2
 }
 
 # Real hardware (not this VM: virtio-gpu rejects adaptive_sync, and kanshi

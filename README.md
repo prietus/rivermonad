@@ -132,6 +132,15 @@ a status line; `rivermonad --status` prints it as JSON lines, which a waybar
 Customise it with a `PP` like xmonad's (`ppCurrent`, `ppHidden`, `ppTitle`,
 `ppOrder`, …); the text uses Pango markup (`pangoColor "#88c0d0"`).
 
+### Wallpaper
+
+**[bgmonad](https://github.com/prietus/bgmonad)** is a living wallpaper,
+also written and configured in Haskell: the picture flows slowly, and through
+rivermonad's IPC socket it can be different on each workspace, slide as you
+change workspace, and blur or dim behind windows. Start it from the
+`startupHook` (`spawnOnce "bgmonad"`) instead of swaybg. It lives in its own
+repository; any other wallpaper program (swaybg, …) works too.
+
 ## Installation
 
 Arch Linux and Fedora (≥ 44): build the package from

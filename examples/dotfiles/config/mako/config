@@ -1,11 +1,11 @@
 # mako notifications (man 5 mako). Reload: makoctl reload
-font=sans 10
-background-color=#2e3440f2
-text-color=#d8dee9
-border-color=#88c0d0
+font=Inter 10
+background-color=#1e1e2ef2
+text-color=#cdd6f4
+border-color=#cba6f7
 border-size=1
-border-radius=10
-padding=10
+border-radius=14
+padding=12
 margin=8
 width=360
 max-icon-size=48
@@ -13,5 +13,5 @@ default-timeout=5000
 anchor=top-right
 
 [urgency=critical]
-border-color=#bf616a
+border-color=#f38ba8
 default-timeout=0

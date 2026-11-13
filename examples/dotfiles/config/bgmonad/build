@@ -1,0 +1,14 @@
+#!/bin/sh
+# Compile ~/.config/bgmonad/bgmonad.hs against a bgmonad checkout
+# ($BGMONAD_SRC, ~/bgmonad by default). bgmonad calls this with the
+# output binary as $1; when run by hand without arguments it builds the
+# binary bgmonad would use.
+set -e
+CFG="$(cd "$(dirname "$0")" && pwd)"
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/bgmonad"
+OUT="${1:-$CACHE/bgmonad-$(uname -m)-linux}"
+mkdir -p "$(dirname "$OUT")"
+cd "${BGMONAD_SRC:-$HOME/bgmonad}"
+exec env -u XDG_CACHE_HOME -u XDG_CONFIG_HOME cabal -v0 exec -- \
+  ghc --make -package bgmonad "$CFG/bgmonad.hs" -i"$CFG/lib" -threaded -v0 \
+  -outputdir "$(dirname "$OUT")/build" -o "$OUT"

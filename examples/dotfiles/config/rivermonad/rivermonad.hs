@@ -23,8 +23,8 @@ myConfig = def
   { terminal           = "foot"
   , modMask            = mod4Mask            -- Super; use mod1Mask for Alt
   , borderWidth        = 2
-  , normalBorderColor  = "#3b4252"
-  , focusedBorderColor = "#88c0d0"
+  , normalBorderColor  = "#313244"
+  , focusedBorderColor = "#cba6f7"
   , workspaces         = ["web", "code", "term"] ++ map show [4 .. 9 :: Int]
   , layoutHook         = myLayout
   , manageHook         = myManageHook
@@ -35,13 +35,16 @@ myConfig = def
   , startupHook        = do
       spawnOnce "waymobar"
       spawnOnce "mako"
-      -- wallpaper: ~/.config/wallpaper is a link to the image; change it with
-      --   ln -sfn /path/to/image ~/.config/wallpaper; pkill -x swaybg; setsid -f swaybg -m fill -i ~/.config/wallpaper
-      spawnOnce "swaybg -m fill -i ~/.config/wallpaper"
+      -- wallpaper: bgmonad (~/.config/bgmonad/bgmonad.hs). ~/.config/wallpaper is
+      -- a link to the image; change it with
+      --   ln -sfn /path/to/image ~/.config/wallpaper
+      -- and bgmonad picks it up by itself. The plain, still alternative:
+      --   spawnOnce "swaybg -m fill -i ~/.config/wallpaper"
+      spawnOnce "bgmonad"
   }
 
 myLayout :: Layout Window
-myLayout = Layout $ toggleLayouts (noBorders Full) $ smartBorders $ gapsWithEdge 1 $
+myLayout = Layout $ toggleLayouts (noBorders Full) $ smartBorders $ gapsWithEdge 6 $
   tiled ||| Mirror tiled ||| ThreeColMid 1 (3 / 100) (1 / 2)
   where
     tiled = Tall 1 (3 / 100) (3 / 5)
@@ -85,8 +88,14 @@ myKeys =
   , ("<Print>",     spawn "shot")              -- whole screen
   , ("S-<Print>",   spawn "shot region")       -- select a region
   , ("C-<Print>",   spawn "shot annotate")     -- region, then annotate in swappy
-    -- screen recording (~/Videos/Recordings); same keys again to stop
-  , ("M-<Print>",   spawn "screenrec")
+    -- Print Screen through macOS/UTM (Fn+P on a Drop ALT): a Mac turns it
+    -- into F13, which xkb calls XF86Tools.
+  ] ++ concat
+  [ [ (m ++ "<XF86Tools>", a), (m ++ "<F13>", a) ]
+  | (m, a) <- [ ("", spawn "shot"), ("S-", spawn "shot region"), ("C-", spawn "shot annotate")
+              , ("M-", spawn "screenrec"), ("M-S-", spawn "screenrec region") ]
+  ] ++
+  [ ("M-<Print>",   spawn "screenrec")
   , ("M-S-<Print>", spawn "screenrec region")
     -- emoji picker: type "tree", Enter, and 🌳 is typed in the focused window
   , ("M-i",         spawn "emoji")
