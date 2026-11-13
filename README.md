@@ -13,6 +13,11 @@ picker, a region screenshot, the launcher and a scratchpad, with the
 [docs/demo.mp4](docs/demo.mp4) (56 s). The setup is in
 [examples/dotfiles](examples/dotfiles/README.md).*
 
+![rivermonad screenshot: nvim, fastfetch and a music player tiled in the Tall layout under waymobar](docs/screenshot.png)
+
+*The Tall layout with 6 px gaps: the configuration file in nvim, fastfetch
+and a terminal music player, under waymobar.*
+
 rivermonad is **not** a compositor. It runs as the window manager process of
 [river](https://codeberg.org/river/river) ≥ 0.4, which splits the compositor
 (rendering, input, protocols, Xwayland) from the window manager, connected by
