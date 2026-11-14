@@ -141,6 +141,18 @@ change workspace, and blur or dim behind windows. Start it from the
 `startupHook` (`spawnOnce "bgmonad"`) instead of swaybg. It lives in its own
 repository; any other wallpaper program (swaybg, …) works too.
 
+### Desktop widgets
+
+**[hasklets](https://github.com/prietus/hasklets)** are desktop widgets
+written in Haskell with GTK 4 and cairo: weather, CPU, memory and network,
+a media player, disks and the top processes, on the desktop above the
+wallpaper and below the windows. Start them from the `startupHook`
+(`spawnOnce "hasklets"`). They live in their own repository.
+
+![hasklets on a rivermonad desktop: weather, CPU, memory and network, media player, disks and processes next to a floating terminal, under waymobar and over the bgmonad wallpaper](docs/hasklets.png)
+
+*hasklets, waymobar and bgmonad on a rivermonad desktop.*
+
 ## Installation
 
 Arch Linux and Fedora (≥ 44): build the package from

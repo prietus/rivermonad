@@ -41,6 +41,8 @@ myConfig = def
       -- and bgmonad picks it up by itself. The plain, still alternative:
       --   spawnOnce "swaybg -m fill -i ~/.config/wallpaper"
       spawnOnce "bgmonad"
+      -- desktop widgets (https://github.com/prietus/hasklets), above the wallpaper
+      spawnOnce "hasklets"
   }
 
 myLayout :: Layout Window
@@ -63,6 +65,7 @@ myManageHook = insertPosition Below Newer <> namedScratchpadManageHook scratchpa
   , isFixedSize                              -?> doCenterFloat   -- min size = max size
   , appId =? "xdg-desktop-portal-gtk"        -?> doCenterFloat   -- open/save dialogs (snaps, portals)
   , appId =? "pavucontrol"                   -?> doCenterFloat
+  , appId =? "dev.hasklets.Settings"         -?> doCenterFloat   -- hasklets --config
   , title =? "Picture-in-Picture"            -?> doFloat
     -- Firefox opens these as independent windows (no parent):
   , isFirefox <&&> (title =? "Library" <||> title ^? "Page Info" <||> title =? "About Mozilla Firefox")

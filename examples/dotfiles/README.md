@@ -3,10 +3,10 @@
 The configuration of a working river + rivermonad desktop on Arch Linux:
 tiling with 6 px gaps, the [waymobar](https://github.com/prietus/waymobar)
 status bar as floating pills, the [bgmonad](https://github.com/prietus/bgmonad)
-living wallpaper, notifications, a Spotlight-like launcher, emoji picker,
+living wallpaper, the [hasklets](https://github.com/prietus/hasklets) desktop
+widgets, notifications, a Spotlight-like launcher, emoji picker,
 screenshots and screen recording, all in Catppuccin Mocha colours. The layout
-mirrors
-the home directory: `config/` is `~/.config/`, `local/bin/` is
+mirrors the home directory: `config/` is `~/.config/`, `local/bin/` is
 `~/.local/bin/`.
 
 | File | What it is |
@@ -17,6 +17,7 @@ the home directory: `config/` is `~/.config/`, `local/bin/` is
 | `config/waymobar/build` | compiles it against a waymobar checkout (`$WAYMOBAR_SRC`) |
 | `config/bgmonad/bgmonad.hs` | the wallpaper: `~/.config/wallpaper` with a slow flow and a parallax between workspaces |
 | `config/bgmonad/build` | compiles it against a bgmonad checkout (`$BGMONAD_SRC`) |
+| `config/hasklets/config.json` | the desktop widgets: weather, CPU/memory/network, media player, disks, processes |
 | `config/river/init` | session start: environment, portals, kanshi, rivermonad |
 | `config/kanshi/config` | monitor resolution, scale and VRR |
 | `config/mako/config` | notifications |
@@ -34,7 +35,8 @@ the home directory: `config/` is `~/.config/`, `local/bin/` is
 ```sh
 sudo pacman -S foot fuzzel mako kanshi grim slurp swappy wl-clipboard \
   wf-recorder wtype unicode-emoji libnotify gdk-pixbuf2 \
-  inter-font noto-fonts-emoji xdg-desktop-portal-wlr xdg-desktop-portal-gtk
+  inter-font noto-fonts-emoji xdg-desktop-portal-wlr xdg-desktop-portal-gtk \
+  gtk4 gtk4-layer-shell gobject-introspection curl
 examples/dotfiles/install.sh          # never overwrites (use --force to replace, keeps .bak)
 contrib/session/install.sh --system   # river-session + login screen entry
 ln -sfn /path/to/image ~/.config/wallpaper
@@ -42,7 +44,7 @@ ln -sfn /path/to/image ~/.config/wallpaper
 
 (The package names are Arch's; on Debian/Ubuntu they are `mako-notifier`,
 `unicode-data`, `libnotify-bin`, `libgdk-pixbuf-2.0-dev`, `fonts-inter` and
-`fonts-noto-color-emoji`.)
+`fonts-noto-color-emoji`; the last line is what hasklets needs.)
 
 Build rivermonad, [waymobar](https://github.com/prietus/waymobar) and
 [bgmonad](https://github.com/prietus/bgmonad) (their READMEs), then point the
@@ -50,6 +52,12 @@ three `build` scripts at the checkouts if they are not in `~/xmonad`,
 `~/waymobar` and `~/bgmonad` (`RIVERMONAD_SRC`, `WAYMOBAR_SRC`,
 `BGMONAD_SRC`). If you installed the libraries with `cabal install --lib`
 instead, delete the `build` scripts: plain ghc is used then.
+
+[hasklets](https://github.com/prietus/hasklets) is a plain program: `cabal
+install --installdir ~/.local/bin` in its checkout. Set your own place in
+`config/hasklets/config.json` (`weather`), or right-click a widget for the
+settings window; without hasklets, remove `spawnOnce "hasklets"` from
+`rivermonad.hs`.
 
 The wallpaper is whatever `~/.config/wallpaper` links to; point the link at
 another image and bgmonad crossfades to it. For a plain, still wallpaper,
