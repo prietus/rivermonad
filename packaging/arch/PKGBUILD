@@ -15,9 +15,8 @@ optdepends=('foot: the default terminal'
             'fuzzel: the default launcher (mod-p)'
             'kanshi: monitor resolution and scale, started by the session'
             'libnotify: notifications when the configuration fails to compile')
-# After tagging v$pkgver: updpkgsums (see ../README.md, "A new release").
 source=("$pkgbase-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('73dda2ea9441ebcb2089e02c998192a5af8c745e8470fe81d249fa64087c6ac6')
 
 build() {
   cd $pkgbase-$pkgver
