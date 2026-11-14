@@ -173,6 +173,49 @@ configuration is compiled against and the login-screen session.
 cd packaging/arch && makepkg -si                 # Arch
 ```
 
+### Arch Linux, with the whole desktop
+
+On Arch the packages are in the AUR. `rivermonad` alone is the window
+manager; `rivermonad-dotfiles` is the complete desktop of
+[examples/dotfiles](examples/dotfiles/README.md) (bar, living wallpaper,
+widgets, launcher, screenshots). It depends on the other programs, so
+install them in this order:
+
+1. [waymobar](https://aur.archlinux.org/packages/waymobar), the bar
+2. [bgmonad](https://aur.archlinux.org/packages/bgmonad), the wallpaper
+3. [hasklets](https://aur.archlinux.org/packages/hasklets), the desktop
+   widgets (the first build compiles the GTK bindings and takes a while)
+4. [shotlet](https://aur.archlinux.org/packages/shotlet), the screenshot
+   and recording toolbar
+5. [rivermonad](https://aur.archlinux.org/packages/rivermonad) and
+   [rivermonad-dotfiles](https://aur.archlinux.org/packages/rivermonad-dotfiles),
+   which are built together from the same PKGBUILD
+
+By hand:
+
+```sh
+for p in waymobar bgmonad hasklets shotlet rivermonad; do
+  git clone https://aur.archlinux.org/$p.git
+  (cd $p && makepkg -si)
+done
+```
+
+An AUR helper works out the order by itself: `paru -S rivermonad-dotfiles`
+(or `yay -S ...`).
+
+A package does not write in your home, so the configuration is installed in
+`/usr/share/rivermonad/dotfiles`. Copy it to `~/.config` as your user:
+
+```sh
+rivermonad-setup           # never overwrites; --force replaces and keeps a .bak, --list only shows
+ln -sfn /path/to/image ~/.config/wallpaper
+```
+
+Then log out and choose "river + rivermonad" on the login screen. If you
+log in before running `rivermonad-setup`, rivermonad starts with its
+defaults (`Super+Shift+Enter` opens a terminal) and a notification reminds
+you of the command.
+
 From source:
 
 ```sh
