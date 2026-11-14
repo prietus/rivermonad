@@ -792,3 +792,38 @@ publishState = do
         , ("app_id", maybe J.JNull (J.str . wiAppId) focusedInfo)
         , ("keyboard_layout", maybe J.JNull J.str kbl) ]) ]
   io (publish (J.renderUtf8 state))
+  -- The reply to the IPC request "Windows": the windows on screen, topmost
+  -- first (fullscreen, then floating, then tiled; the focused one first
+  -- within each group). x, y, width and height are in the global logical
+  -- coordinates grim and slurp use, borders included.
+  publishWins <- asks ipcPublishWindows
+  let num = J.JNum . fromIntegral
+      focusedWin = W.peek ws
+      outRect o = do
+        oi <- M.lookup o outs
+        (x, y) <- oiPos oi
+        (w, h) <- oiDims oi
+        pure (Rectangle x y w h)
+      winJson scr w = do
+        i <- M.lookup w infos
+        let floating = M.member w (W.floating ws)
+            fullscreen = isJust (wiFullscreen i)
+        Rectangle x y wd ht <- case wiFullscreen i of
+          Just o -> outRect o
+          Nothing -> case M.lookup w (W.floating ws) of
+            Just rr -> Just (fromRationalRect (sdRect (W.screenDetail scr)) rr)
+            Nothing -> wiGeom i
+        let rank = (if fullscreen then 0 else if floating then 1 else 2 :: Int, Just w /= focusedWin)
+        pure (rank, J.obj
+          [ ("id", J.str (wiIdentifier i))
+          , ("app_id", J.str (wiAppId i))
+          , ("title", J.str (wiTitle i))
+          , ("workspace", J.str (W.tag (W.workspace scr)))
+          , ("output", maybe J.JNull J.str (outName (W.screenDetail scr)))
+          , ("x", num x), ("y", num y), ("width", num wd), ("height", num ht)
+          , ("focused", J.JBool (Just w == focusedWin))
+          , ("floating", J.JBool floating)
+          , ("fullscreen", J.JBool fullscreen) ])
+      wins = [ r | have, scr <- W.screens ws, w <- W.integrate' (W.stack (W.workspace scr))
+                 , Just r <- [winJson scr w] ]
+  io (publishWins (J.renderUtf8 (J.obj [("Windows", J.JArr (map snd (sortOn fst wins)))])))

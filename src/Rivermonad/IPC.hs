@@ -8,6 +8,9 @@
 --   @{"JumpToLayout":"Full"}@, @"FocusUp"@, @"FocusDown"@, @"Restart"@,
 --   @"Logout"@ (close every window, then end the session),
 --   @"NextKeyboardLayout"@.
+-- * @"Windows"@: reply with one @{"Windows":[...]}@ line, the windows on
+--   screen with their geometry, topmost first (see
+--   'Rivermonad.Engine.publishState'); for screenshot tools and the like.
 --
 -- The socket is @$XDG_RUNTIME_DIR/rivermonad-$WAYLAND_DISPLAY.sock@ and is
 -- exported to children as @RIVERMONAD_SOCKET@.
@@ -16,6 +19,7 @@ module Rivermonad.IPC
   , ipcSocketPath
   , startIPCServer
   , publishIPC
+  , publishWindowsIPC
   , runIPCClient
   ) where
 
@@ -42,6 +46,7 @@ import qualified Rivermonad.JSON as J
 data IPCServer = IPCServer
   { srvSubs :: MVar [NS.Socket]
   , srvLast :: IORef B.ByteString
+  , srvWindows :: IORef B.ByteString
   }
 
 -- | The socket of the rivermonad managing /this/ Wayland display, if it
@@ -73,7 +78,7 @@ startIPCServer ch = do
     NS.bind sock (NS.SockAddrUnix path)
     NS.listen sock 16
     setEnv "RIVERMONAD_SOCKET" path
-    srv <- IPCServer <$> newMVar [] <*> newIORef B.empty
+    srv <- IPCServer <$> newMVar [] <*> newIORef B.empty <*> newIORef (BC.pack "{\"Windows\":[]}")
     void $ forkIO $ forever $ do
       (client, _) <- NS.accept sock
       NS.withFdSocket client NS.setCloseOnExecIfNeeded
@@ -96,6 +101,9 @@ handleClient srv ch s = do
         ok <- sendLine s (J.renderUtf8 (J.obj [("Ok", J.str "Handled")]))
         ok' <- if ok && not (B.null lastLine) then sendRaw s lastLine else pure ok
         pure (if ok' then s : subs else subs)
+    Just (J.JStr "Windows") -> do
+      void (sendLine s =<< readIORef (srvWindows srv))
+      NS.close s
     Just (J.JObj [("Action", a)]) | Just act <- parseAction a -> do
       writeChan ch (InAction act)
       void (sendLine s (J.renderUtf8 (J.obj [("Ok", J.str "Handled")])))
@@ -125,6 +133,10 @@ publishIPC srv body = do
   unless (line == prev) $ modifyMVar_ (srvSubs srv) $ \subs -> do
     writeIORef (srvLast srv) line
     filterM (`sendRaw` line) subs
+
+-- | Remember the reply to the next @"Windows"@ requests.
+publishWindowsIPC :: IPCServer -> B.ByteString -> IO ()
+publishWindowsIPC srv = writeIORef (srvWindows srv)
 
 sendLine :: NS.Socket -> B.ByteString -> IO Bool
 sendLine s b = sendRaw s (b <> BC.pack "\n")

@@ -33,7 +33,7 @@ import Rivermonad.Config (defaultConfig)
 import Rivermonad.Engine
 import Rivermonad.Recompile
 import Rivermonad.Status (runStatusClient)
-import Rivermonad.IPC (publishIPC, runIPCClient, startIPCServer)
+import Rivermonad.IPC (publishIPC, publishWindowsIPC, runIPCClient, startIPCServer)
 import Rivermonad.Operations (queue)
 import qualified Rivermonad.StackSet as W
 import Rivermonad.Wayland.Protocol
@@ -147,7 +147,8 @@ runWM cfg = do
                   , gInputManager = fst <$> mim, gXkbConfig = fst <$> mxc, gLibinput = fst <$> mli
                   , gCompositor = fst <$> mcomp, gShm = fst <$> mshm }
       xconf = XConf { config = cfg, conn = c, globals = g, inputs = ch
-                    , ipcPublish = maybe (const (pure ())) publishIPC ipcSrv }
+                    , ipcPublish = maybe (const (pure ())) publishIPC ipcSrv
+                    , ipcPublishWindows = maybe (const (pure ())) publishWindowsIPC ipcSrv }
       ws0 = applyRestoredLayouts (layoutHook cfg) (rsLayouts restored)
               (W.new (layoutHook cfg) (workspaces cfg) [SD nullObject (Rectangle 0 0 0 0)])
       st0 = XState

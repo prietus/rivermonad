@@ -377,6 +377,7 @@ data XConf = XConf
   , globals :: !Globals
   , inputs  :: !(Chan Input)
   , ipcPublish :: !(B.ByteString -> IO ()) -- ^ send a state line to IPC subscribers
+  , ipcPublishWindows :: !(B.ByteString -> IO ()) -- ^ the reply to the IPC request "Windows"
   }
 
 data XState = XState
