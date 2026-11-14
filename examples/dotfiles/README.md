@@ -4,8 +4,9 @@ The configuration of a working river + rivermonad desktop on Arch Linux:
 tiling with 6 px gaps, the [waymobar](https://github.com/prietus/waymobar)
 status bar as floating pills, the [bgmonad](https://github.com/prietus/bgmonad)
 living wallpaper, the [hasklets](https://github.com/prietus/hasklets) desktop
-widgets, notifications, a Spotlight-like launcher, emoji picker,
-screenshots and screen recording, all in Catppuccin Mocha colours. The layout
+widgets, the [shotlet](https://github.com/prietus/shotlet) screenshot and
+recording toolbar, notifications, a Spotlight-like launcher and an emoji
+picker, all in Catppuccin Mocha colours. The layout
 mirrors the home directory: `config/` is `~/.config/`, `local/bin/` is
 `~/.local/bin/`.
 
@@ -13,11 +14,11 @@ mirrors the home directory: `config/` is `~/.config/`, `local/bin/` is
 |---|---|
 | `config/rivermonad/rivermonad.hs` | the window manager: layouts, rules, keys |
 | `config/rivermonad/build` | compiles it against a rivermonad checkout (`$RIVERMONAD_SRC`) |
-| `config/waymobar/waymobar.hs` | the bar: workspaces, layout, title, media, network (Wi-Fi menu), weather, volume, CPU, memory, battery, tray, clock, log out |
+| `config/waymobar/waymobar.hs` | the bar: workspaces, layout, title, media, network (Wi-Fi menu), weather, volume, CPU, memory, battery, shotlet button, tray, clock, log out; Material Symbols icons |
 | `config/waymobar/build` | compiles it against a waymobar checkout (`$WAYMOBAR_SRC`) |
 | `config/bgmonad/bgmonad.hs` | the wallpaper: `~/.config/wallpaper` with a slow flow and a parallax between workspaces |
 | `config/bgmonad/build` | compiles it against a bgmonad checkout (`$BGMONAD_SRC`) |
-| `config/hasklets/config.json` | the desktop widgets: weather, CPU/memory/network, media player, disks, processes |
+| `config/hasklets/config.json` | the desktop widgets: weather, CPU/memory/network, media player, disks, processes, calendar |
 | `config/river/init` | session start: environment, portals, kanshi, rivermonad |
 | `config/kanshi/config` | monitor resolution, scale and VRR |
 | `config/mako/config` | notifications |
@@ -36,7 +37,7 @@ mirrors the home directory: `config/` is `~/.config/`, `local/bin/` is
 sudo pacman -S foot fuzzel mako kanshi grim slurp swappy wl-clipboard \
   wf-recorder wtype unicode-emoji libnotify gdk-pixbuf2 \
   inter-font noto-fonts-emoji xdg-desktop-portal-wlr xdg-desktop-portal-gtk \
-  gtk4 gtk4-layer-shell gobject-introspection curl
+  gtk4 gtk4-layer-shell gobject-introspection curl python-gobject
 examples/dotfiles/install.sh          # never overwrites (use --force to replace, keeps .bak)
 contrib/session/install.sh --system   # river-session + login screen entry
 ln -sfn /path/to/image ~/.config/wallpaper
@@ -44,7 +45,7 @@ ln -sfn /path/to/image ~/.config/wallpaper
 
 (The package names are Arch's; on Debian/Ubuntu they are `mako-notifier`,
 `unicode-data`, `libnotify-bin`, `libgdk-pixbuf-2.0-dev`, `fonts-inter` and
-`fonts-noto-color-emoji`; the last line is what hasklets needs.)
+`fonts-noto-color-emoji`; the last line is what hasklets and shotlet need.)
 
 Build rivermonad, [waymobar](https://github.com/prietus/waymobar) and
 [bgmonad](https://github.com/prietus/bgmonad) (their READMEs), then point the
@@ -59,16 +60,21 @@ install --installdir ~/.local/bin` in its checkout. Set your own place in
 settings window; without hasklets, remove `spawnOnce "hasklets"` from
 `rivermonad.hs`.
 
+[shotlet](https://github.com/prietus/shotlet) is one Python file: clone it
+and link it into `~/.local/bin` (its README). `Super+Shift+S` and the button
+in the bar open it; the `Print` keys keep using the plain `shot` and
+`screenrec` scripts, and either can stop a recording started by the other.
+
 The wallpaper is whatever `~/.config/wallpaper` links to; point the link at
 another image and bgmonad crossfades to it. For a plain, still wallpaper,
 swap `spawnOnce "bgmonad"` for the swaybg line in `rivermonad.hs`.
 
 Fonts: the bar, the launcher and the notifications use **Inter**; the bar's
-icons are colour emoji (**Noto Color Emoji**) plus a few glyphs from the
-**Symbols Nerd Font**: download `NerdFontsSymbolsOnly.tar.xz` from the Nerd
-Fonts releases, put the `.ttf` files in `~/.local/share/fonts/` and its
-`10-nerd-font-symbols.conf` in `~/.config/fontconfig/conf.d/`, then
-`fc-cache -f`. The terminal uses *Ubuntu Mono derivative Powerline* (from
+icons are **Material Symbols** (the variable font, Rounded cut:
+`ttf-material-symbols-variable-git` from the AUR, or the `.ttf` from
+[google/material-design-icons](https://github.com/google/material-design-icons)
+in `~/.local/share/fonts/`, then `fc-cache -f`); **Noto Color Emoji** is for
+the emoji picker. The terminal uses *Ubuntu Mono derivative Powerline* (from
 [powerline/fonts](https://github.com/powerline/fonts)); change `font=` in
 `foot.ini` if you don't have it.
 
@@ -86,6 +92,7 @@ Fonts releases, put the `.ttf` files in `~/.local/share/fonts/` and its
 | `Super+1…9`, `Super+Shift+1…9` | go to / move to workspace (`Super+←/→` cycle, `Super+Tab` previous) |
 | `` Super+` `` | scratchpad terminal |
 | `Super+drag`, `Super+right drag`, `Super+T` | move, resize (makes it float), back to tiling |
+| `Super+Shift+S` | shotlet: the screenshot and recording toolbar |
 | `Print`, `Shift+Print`, `Ctrl+Print` | screenshot: screen, region, region + annotate |
 | `F13` instead of `Print` | the same from a Mac keyboard through UTM, where Print Screen arrives as F13 |
 | `Super+Print`, `Super+Shift+Print` | record screen / region (again to stop) |

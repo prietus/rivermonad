@@ -87,6 +87,10 @@ myKeys =
   , ("M-S-f",       withFocused float)
   , ("M-=",         incSpacing 1)
   , ("M--",         incSpacing (-1))
+    -- the screenshot toolbar (https://github.com/prietus/shotlet), also the
+    -- button in the bar:
+    -- screen, window, region, recordings, timer; again closes it
+  , ("M-S-s",       spawn "shotlet")
     -- screenshots (~/Pictures/Screenshots + clipboard), see ~/.local/bin/shot
   , ("<Print>",     spawn "shot")              -- whole screen
   , ("S-<Print>",   spawn "shot region")       -- select a region

@@ -6,6 +6,10 @@
 -- Docs: https://github.com/prietus/waymobar
 import Data.List (isInfixOf, stripPrefix)
 import Data.Maybe (fromMaybe)
+import Control.Exception (SomeException, try)
+import Data.IORef (newIORef, readIORef, writeIORef)
+import GHC.Clock (getMonotonicTime)
+import System.Environment (lookupEnv)
 
 import Waymobar
 
@@ -22,8 +26,8 @@ peach    = "#fab387"; red      = "#f38ba8"; pink     = "#f5c2e7"
 -- Pill theme: a transparent bar where every widget is a rounded "island".
 -- The bar is 28 px high and floats 6 px from the screen edges (the same gap
 -- rivermonad leaves between windows); a pill fills the bar's height.
--- Icons are colour emoji (Noto Color Emoji, through pango's font fallback),
--- except the workspaces, CPU and memory, which use Nerd Font glyphs.
+-- Icons are Material Symbols (the variable font, "Rounded" cut, filled),
+-- drawn in white; see 'sym' below.
 
 -- | The look of every pill: slightly translucent, no border.
 pill :: Style
@@ -65,31 +69,51 @@ main = waymobar def
       , inClickablePill myNetwork
       , inClickablePill myWeather
       , inClickablePill myVolume
-      , inPill (cpu (\p -> ic peach icCpu ++ warn 80 p (num (show p ++ "%"))))
-      , inPill (memory (\p -> ic yellow icMem ++ warn 85 p (num (show p ++ "%"))))
-      , inPill (battery (\p st -> em (batteryIcon p st)
+      , inPill (cpu (\p -> sym "memory" ++ warn 80 p (num (show p ++ "%"))))
+      , inPill (memory (\p -> sym "memory_alt" ++ warn 85 p (num (show p ++ "%"))))
+      , inPill (battery (\p st -> sym (batteryIcon p st)
                                     ++ warn' (p <= 15 && st /= "Charging") (num (show p ++ "%"))))
+      , inClickablePill screenshot
       -- one pill around all the tray icons
-      , groupStyle pill { stylePadding = Just 8 } (tray defaultTray { traySymbolicColor = text' })
+      , groupStyle pill { stylePadding = Just 8 } (tray defaultTray { traySymbolicColor = white })
       , inPill (markup clockMarkup (clock "%a %d %b|%H:%M"))
         -- log out: asks to confirm, closes every window, then back to GDM
-      , inClickablePill (colored red (logoutButton "<span size='larger'>⏻</span>"))
+      , inClickablePill (logoutButton (sym1 "power_settings_new"))
       ]
   }
 
--- | An emoji (slightly larger than the text) followed by a space.
-em :: String -> String
-em e = "<span size='larger'>" ++ e ++ "</span>  "
+-- | The colour of the icons.
+white :: String
+white = "#ffffff"
 
--- | A coloured Nerd Font glyph followed by a space.
-ic :: String -> String -> String
-ic color glyph = "<span size='larger' foreground='" ++ color ++ "'>" ++ glyph ++ "</span>  "
+-- | The icon font. Others: "Material Symbols Outlined", "Material Symbols
+-- Sharp"; "@FILL=0" gives the outlined drawing, "@wght=300" thinner strokes.
+iconFont, iconAxes :: String
+iconFont = "Material Symbols Rounded"
+iconAxes = "@FILL=1"
 
--- Nerd Font icons (the "Symbols Nerd Font"; any glyph from
--- https://www.nerdfonts.com/cheat-sheet works).
-icCpu, icMem :: String
-icCpu = "\xf2db"    -- nf-fa-microchip
-icMem = "\xf035b"   -- nf-md-memory
+-- | A Material Symbols icon by its name (https://fonts.google.com/icons:
+-- "wifi", "volume_up"...), in white, followed by a space.
+sym :: String -> String
+sym name = sym1 name ++ "  "
+
+-- | The same without the space.
+sym1 :: String -> String
+sym1 = iconAt 14 white
+
+-- | An icon at a size in points and in a colour. The icons are bigger than
+-- the text, so they are lowered to stay centred on the line.
+iconAt :: Int -> String -> String -> String
+iconAt size color name =
+  "<span font_desc='" ++ iconFont ++ " " ++ show size ++ " " ++ iconAxes
+    ++ "' rise='" ++ show (negate (size * 215)) ++ "' foreground='" ++ color ++ "'>"
+    ++ name ++ "</span>"
+
+-- | An icon that takes the colour of the text around it (the workspaces,
+-- whose colour depends on their state).
+symPlain :: String -> String
+symPlain name =
+  "<span font_desc='" ++ iconFont ++ " 14 " ++ iconAxes ++ "' rise='-3010'>" ++ name ++ "</span>  "
 
 -- | Tabular figures, so the pills don't change width as the numbers do.
 num :: String -> String
@@ -98,18 +122,22 @@ num s = "<span font_features='tnum'>" ++ s ++ "</span>"
 -- | 'clock' escapes its text, so the icons and the bold time are added
 -- afterwards: "Thu 12 Nov|20:37" is split at the bar.
 clockMarkup :: String -> String
-clockMarkup s = em "📅" ++ day ++ "    " ++ em "🕒" ++ num ("<b>" ++ drop 1 time ++ "</b>")
+clockMarkup s = sym "calendar_today" ++ day ++ "    " ++ sym "schedule" ++ num ("<b>" ++ drop 1 time ++ "</b>")
   where (day, time) = break (== '|') s
 
--- Battery: 🔋, 🪫 when low, with ⚡ while charging.
+-- Battery: the level in seven steps, a bolt while charging, an alert when low.
 batteryIcon :: Int -> String -> String
-batteryIcon p st = (if st == "Charging" then "⚡" else "") ++ (if p <= 15 then "🪫" else "🔋")
+batteryIcon p st
+  | st == "Charging" = "battery_charging_full"
+  | p <= 15          = "battery_alert"
+  | p >= 95          = "battery_full"
+  | otherwise        = "battery_" ++ show (min 6 (p * 7 `div` 100)) ++ "_bar"
 
--- Nerd Font icons in front of the named workspaces.
+-- Icons in front of the named workspaces (in the colour of the workspace).
 wsIcon :: String -> String
-wsIcon "web"  = em "\xf269"   -- nf-fa-firefox
-wsIcon "code" = em "\xf121"   -- nf-fa-code
-wsIcon "term" = em "\xf120"   -- nf-fa-terminal
+wsIcon "web"  = symPlain "language"
+wsIcon "code" = symPlain "code"
+wsIcon "term" = symPlain "terminal"
 wsIcon _      = ""
 
 -- web/code/term always; numbered workspaces only when they have windows or
@@ -134,15 +162,15 @@ myWorkspaces = workspaces defaultWorkspaces
     wsHover = wsPill { styleHover = Just noStyle { styleBg = Just surface0 } }
     w & f = f w
 
--- The layout as an emoji plus its name ("Spacing Tall" -> "Tall").
+-- The layout as an icon plus its name ("Spacing Tall" -> "Tall").
 layoutLabel :: String -> String
-layoutLabel l = em glyph ++ "<span foreground='" ++ subtext ++ "'>" ++ escape name ++ "</span>"
+layoutLabel l = sym glyph ++ "<span foreground='" ++ subtext ++ "'>" ++ escape name ++ "</span>"
   where
     name = fromMaybe l (stripPrefix "Spacing " l)
-    glyph | "Full" `isInfixOf` name     = "🖥️"
-          | "Mirror" `isInfixOf` name   = "🔃"
-          | "ThreeCol" `isInfixOf` name = "🏛️"
-          | otherwise                   = "🪟"
+    glyph | "Full" `isInfixOf` name     = "fullscreen"
+          | "Mirror" `isInfixOf` name   = "splitscreen_top"
+          | "ThreeCol" `isInfixOf` name = "view_week"
+          | otherwise                   = "view_sidebar"
 
 -- Volume of the default output, live through pipewire-pulse: click mutes,
 -- the wheel changes it (up to 100%).
@@ -150,8 +178,8 @@ myVolume :: Widget
 myVolume = volume $ \case
   Nothing -> ""
   Just v
-    | volMuted v -> em "🔇" ++ "<span foreground='" ++ overlay0 ++ "'>muted</span>"
-    | otherwise  -> em (if volPercent v < 50 then "🔉" else "🔊") ++ num (show (volPercent v) ++ "%")
+    | volMuted v -> sym "volume_off" ++ "<span foreground='" ++ overlay0 ++ "'>muted</span>"
+    | otherwise  -> sym (if volPercent v < 50 then "volume_down" else "volume_up") ++ num (show (volPercent v) ++ "%")
 
 -- The connection: the Wi-Fi network (or the wired interface). With the
 -- pointer on it, a panel shows the details (band, addresses, router, link
@@ -160,10 +188,10 @@ myVolume = volume $ \case
 myNetwork :: Widget
 myNetwork = wifiMenu $ networkHover 3 label (maybe "" networkDetails)
   where
-    label Nothing = em "🚫" ++ "<span foreground='" ++ overlay0 ++ "'>offline</span>"
+    label Nothing = sym "wifi_off" ++ "<span foreground='" ++ overlay0 ++ "'>offline</span>"
     label (Just n)
-      | netKind n == Wifi = em "📶" ++ escape (fromMaybe "Wi-Fi" (netName n))
-      | otherwise         = em "🔌" ++ escape (netInterface n)
+      | netKind n == Wifi = sym "wifi" ++ escape (fromMaybe "Wi-Fi" (netName n))
+      | otherwise         = sym "lan" ++ escape (netInterface n)
 
 -- The weather (Open-Meteo), located from the public IP address; pin it with
 -- `weatherLocation = City "Sevilla"` or `Coords 37.38 (-5.98)`. Click
@@ -171,29 +199,68 @@ myNetwork = wifiMenu $ networkHover 3 label (maybe "" networkDetails)
 myWeather :: Widget
 myWeather = weather defaultWeather { weatherHover = details } $ \case
   Nothing -> ""
-  Just w -> em (weatherEmoji w) ++ num (show (weatherTemp w) ++ "°")
+  Just w -> sym (weatherSymbol w) ++ num (show (weatherTemp w) ++ "°")
   where
     -- The panel: the temperature in big, the place and the sky, and a
     -- small grid with today's extremes, the humidity and the wind.
     details w = "<span line_height='1.3'>"
-      ++ "<span size='220%'>" ++ weatherEmoji w ++ " <b>" ++ num (show (weatherTemp w) ++ "°") ++ "</b></span>\n"
+      ++ iconAt 26 white (weatherSymbol w) ++ "<span size='220%'> <b>" ++ num (show (weatherTemp w) ++ "°") ++ "</b></span>\n"
       ++ (if null (weatherPlace w) then "" else "<b>" ++ escape (weatherPlace w) ++ "</b>\n")
       ++ dim (escape (weatherDescription w) ++ " · feels like " ++ show (weatherFeelsLike w) ++ "°") ++ "\n"
       ++ "<span size='40%'> </span>\n"
-      ++ cell "⬆️" (show (weatherTempMax w) ++ "°") ++ cell "⬇️" (show (weatherTempMin w) ++ "°") ++ "\n"
-      ++ cell "💧" (show (weatherHumidity w) ++ "%") ++ cell "💨" (show (weatherWind w) ++ " km/h")
+      ++ cell "arrow_upward" (show (weatherTempMax w) ++ "°") ++ cell "arrow_downward" (show (weatherTempMin w) ++ "°") ++ "\n"
+      ++ cell "humidity_percentage" (show (weatherHumidity w) ++ "%") ++ cell "air" (show (weatherWind w) ++ " km/h")
       ++ "</span>"
-    -- an emoji and its value; the tab lines the second column up
-    cell e v = e ++ "  " ++ num v ++ "\t"
+    -- an icon and its value; the tab lines the second column up
+    cell e v = sym e ++ num v ++ "\t"
     dim s = "<span foreground='" ++ subtext ++ "'>" ++ s ++ "</span>"
+
+-- The Material Symbols icon for the weather code (WMO), day or night.
+weatherSymbol :: Weather -> String
+weatherSymbol w = case weatherCode w of
+  0 -> dn "clear_day" "bedtime"
+  1 -> dn "partly_cloudy_day" "partly_cloudy_night"
+  2 -> dn "partly_cloudy_day" "partly_cloudy_night"
+  3 -> "cloud"
+  c | c `elem` [45, 48] -> "foggy"
+    | c `elem` [56, 57, 66, 67] -> "weather_mix"            -- freezing
+    | c `elem` [51, 53, 55, 61, 63, 65, 80, 81, 82] -> "rainy"
+    | c `elem` [71, 73, 75, 77, 85, 86] -> "weather_snowy"
+    | c `elem` [95, 96, 99] -> "thunderstorm"
+    | otherwise -> "help"
+  where
+    dn d n = if weatherIsDay w then d else n
 
 -- The current media player: left click play/pause, right click next,
 -- middle click previous. Hidden when nothing is playing or paused.
 media :: Widget
 media = mpris $ \m ->
   if mediaStatus m == Stopped then "" else
-    em (if mediaStatus m == Playing then "▶️" else "⏸️")
+    sym (if mediaStatus m == Playing then "play_arrow" else "pause")
       ++ escape (shorten 40 (if null (mediaArtist m) then mediaTitle m else mediaArtist m ++ " - " ++ mediaTitle m))
+
+-- Screenshots and screen recordings (https://github.com/prietus/shotlet): a click opens a toolbar
+-- like the one of macOS (screen, window, region, record; timer and the rest
+-- under Options). While a recording runs this shows its duration in red,
+-- and a click stops it.
+screenshot :: Widget
+screenshot = spawnOnClick "shotlet" $ periodicIO 1 $ do
+  started <- newIORef Nothing              -- when this recording was first seen
+  pure $ do
+    dir <- fromMaybe "/tmp" <$> lookupEnv "XDG_RUNTIME_DIR"
+    -- "PID\nFILE", written when a recording starts
+    pid <- either (const "") (takeWhile (/= '\n')) <$> readFile' (dir ++ "/screenrec")
+    alive <- if null pid then pure False else either (const False) (const True) <$> readFile' ("/proc/" ++ pid ++ "/comm")
+    now <- getMonotonicTime
+    if not alive then writeIORef started Nothing >> pure (sym1 "screenshot_region") else do
+      t0 <- maybe (writeIORef started (Just now) >> pure now) pure =<< readIORef started
+      let secs = round (now - t0) :: Int
+          two n = (if n < 10 then "0" else "") ++ show n
+      pure (iconAt 14 red "stop_circle" ++ "  <span foreground='" ++ red ++ "'>"
+              ++ num (show (secs `div` 60) ++ ":" ++ two (secs `mod` 60)) ++ "</span>")
+  where
+    readFile' :: FilePath -> IO (Either SomeException String)
+    readFile' p = try (readFile p >>= \c -> length c `seq` pure c)
 
 warn :: Int -> Int -> String -> String
 warn limit p = warn' (p >= limit)

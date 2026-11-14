@@ -153,6 +153,16 @@ wallpaper and below the windows. Start them from the `startupHook`
 
 *hasklets, waymobar and bgmonad on a rivermonad desktop.*
 
+### Screenshots and recordings
+
+**[shotlet](https://github.com/prietus/shotlet)** is a screenshot and
+screen recording toolbar modelled on the one of macOS (⌘⇧5): capture the
+entire screen, a window or a selected portion, record the screen or a
+portion, with a timer and a thumbnail of the result to annotate. It is one
+Python file (GTK 4, grim, wf-recorder); window mode asks rivermonad where
+the windows are with the IPC request `"Windows"`. Bind a key to it,
+`("M-S-s", spawn "shotlet")`. It lives in its own repository.
+
 ## Installation
 
 Arch Linux and Fedora (≥ 44): build the package from
