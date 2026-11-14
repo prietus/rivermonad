@@ -76,7 +76,8 @@ main = waymobar def
       , inClickablePill screenshot
       -- one pill around all the tray icons
       , groupStyle pill { stylePadding = Just 8 } (tray defaultTray { traySymbolicColor = white })
-      , inPill (markup clockMarkup (clock "%a %d %b|%H:%M"))
+        -- the date is also the calendar: the agenda opens with the pointer on it
+      , inClickablePill (withCalendar myCalendar (clock "%a %d %b|%H:%M"))
         -- log out: asks to confirm, closes every window, then back to GDM
       , inClickablePill (logoutButton (sym1 "power_settings_new"))
       ]
@@ -119,11 +120,32 @@ symPlain name =
 num :: String -> String
 num s = "<span font_features='tnum'>" ++ s ++ "</span>"
 
+-- The calendars shown under the date. Add your accounts to the list, for
+-- iCloud:
+--
+-- >   [ ICloud "me@icloud.com" (PasswordFile "~/.config/waymobar/icloud-password") ]
+--
+-- with an app-specific password (appleid.apple.com > Sign-In and Security >
+-- App-Specific Passwords) as the first line of that file (chmod 600): the
+-- password never goes in this file. A click on the date fetches the events
+-- again.
+myCalendar :: CalendarConfig
+myCalendar = defaultCalendar
+  { calendarAccounts = []
+  , calendarMarkup = clockMarkup
+  }
+
 -- | 'clock' escapes its text, so the icons and the bold time are added
--- afterwards: "Thu 12 Nov|20:37" is split at the bar.
-clockMarkup :: String -> String
-clockMarkup s = sym "calendar_today" ++ day ++ "    " ++ sym "schedule" ++ num ("<b>" ++ drop 1 time ++ "</b>")
-  where (day, time) = break (== '|') s
+-- afterwards: "Thu 12 Nov|20:37" is split at the bar. When there are
+-- events left today, the calendar icon gets a mark and the colour of the
+-- next one's calendar.
+clockMarkup :: Agenda -> String -> String
+clockMarkup a s = dateIcon ++ "  " ++ day ++ "    " ++ sym "schedule" ++ num ("<b>" ++ drop 1 time ++ "</b>")
+  where
+    (day, time) = break (== '|') s
+    dateIcon = case agendaToday a of
+      e : _ -> iconAt 14 (fromMaybe mauve (eventColor e)) "event"
+      []    -> sym1 "calendar_today"
 
 -- Battery: the level in seven steps, a bolt while charging, an alert when low.
 batteryIcon :: Int -> String -> String
@@ -194,7 +216,7 @@ myNetwork = wifiMenu $ networkHover 3 label (maybe "" networkDetails)
       | otherwise         = sym "lan" ++ escape (netInterface n)
 
 -- The weather (Open-Meteo), located from the public IP address; pin it with
--- `weatherLocation = City "Sevilla"` or `Coords 37.38 (-5.98)`. Click
+-- `weatherLocation = City "Madrid"` or `Coords 40.42 (-3.70)`. Click
 -- refreshes; with the pointer on it, a panel shows the details.
 myWeather :: Widget
 myWeather = weather defaultWeather { weatherHover = details } $ \case

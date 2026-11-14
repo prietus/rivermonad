@@ -1,3 +1,9 @@
 dist-newstyle/
 *.hi
 *.o
+
+# Credentials and backups of a live configuration: never in the repository.
+icloud-password
+accounts.json
+*.bak
+*.bak-*

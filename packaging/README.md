@@ -27,6 +27,33 @@ cd packaging/arch
 makepkg -si
 ```
 
+The PKGBUILD builds two packages:
+
+* **rivermonad**: the window manager, its library and the session.
+* **rivermonad-dotfiles** (`any`): the desktop of
+  [examples/dotfiles](../examples/dotfiles/README.md). A package must not
+  write in `/home`, so the files are installed in
+  `/usr/share/rivermonad/dotfiles` and each user copies them to `~/.config`
+  with `rivermonad-setup` (it never overwrites; `--force` replaces and keeps
+  a `.bak`, `--list` only shows what it would do). The first session without
+  a `~/.config/rivermonad/rivermonad.hs` shows a notification that says so.
+
+rivermonad-dotfiles depends on the rest of the desktop, whose PKGBUILDs are
+in their repositories (`packaging/arch/`): build and install
+[waymobar](https://github.com/prietus/waymobar),
+[bgmonad](https://github.com/prietus/bgmonad),
+[hasklets](https://github.com/prietus/hasklets) and
+[shotlet](https://github.com/prietus/shotlet) first, then:
+
+```sh
+makepkg -si                # both packages
+rivermonad-setup           # as your user: copies the dotfiles to ~/.config
+```
+
+`makepkg -si --pkg rivermonad` builds only the window manager. The
+`build` scripts of the dotfiles (they compile against a source checkout)
+are left out of the package: plain ghc finds the packaged libraries.
+
 ## Fedora
 
 ```sh
@@ -34,7 +61,7 @@ sudo dnf install rpm-build rpmdevtools dnf-plugins-core
 sudo dnf builddep packaging/fedora/rivermonad.spec
 spectool -g -R packaging/fedora/rivermonad.spec
 rpmbuild -bb packaging/fedora/rivermonad.spec
-sudo dnf install ~/rpmbuild/RPMS/*/{,ghc-}rivermonad*-0.1.0-*.rpm
+sudo dnf install ~/rpmbuild/RPMS/*/{,ghc-}rivermonad*-0.2.0-*.rpm
 ```
 
 The same spec builds in [COPR](https://copr.fedorainfracloud.org/).
@@ -44,4 +71,5 @@ The same spec builds in [COPR](https://copr.fedorainfracloud.org/).
 1. Bump `version:` in `rivermonad.cabal`, `pkgver` in the PKGBUILD and
    `Version:` in the spec (plus a `%changelog` entry).
 2. Tag it: `git tag -a v0.2.0 -m "rivermonad 0.2.0" && git push --tags`.
-3. Update `sha256sums` in the PKGBUILD with `updpkgsums`.
+3. Update `sha256sums` in the PKGBUILD with `updpkgsums` (it is `SKIP`
+   until the tag exists).

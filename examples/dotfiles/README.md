@@ -14,7 +14,7 @@ mirrors the home directory: `config/` is `~/.config/`, `local/bin/` is
 |---|---|
 | `config/rivermonad/rivermonad.hs` | the window manager: layouts, rules, keys |
 | `config/rivermonad/build` | compiles it against a rivermonad checkout (`$RIVERMONAD_SRC`) |
-| `config/waymobar/waymobar.hs` | the bar: workspaces, layout, title, media, network (Wi-Fi menu), weather, volume, CPU, memory, battery, shotlet button, tray, clock, log out; Material Symbols icons |
+| `config/waymobar/waymobar.hs` | the bar: workspaces, layout, title, media, network (Wi-Fi menu), weather, volume, CPU, memory, battery, shotlet button, tray, clock with the calendar's agenda, log out; Material Symbols icons |
 | `config/waymobar/build` | compiles it against a waymobar checkout (`$WAYMOBAR_SRC`) |
 | `config/bgmonad/bgmonad.hs` | the wallpaper: `~/.config/wallpaper` with a slow flow and a parallax between workspaces |
 | `config/bgmonad/build` | compiles it against a bgmonad checkout (`$BGMONAD_SRC`) |
@@ -32,6 +32,10 @@ mirrors the home directory: `config/` is `~/.config/`, `local/bin/` is
 | `local/bin/emoji` | emoji picker: type a name, Enter, it is typed in the focused window |
 
 ## Install
+
+On Arch Linux there is a package (see [packaging](../../packaging/README.md)):
+`rivermonad-dotfiles` depends on everything below, and `rivermonad-setup`
+copies these files into your home. By hand, from a checkout:
 
 ```sh
 sudo pacman -S foot fuzzel mako kanshi grim slurp swappy wl-clipboard \
@@ -65,13 +69,19 @@ and link it into `~/.local/bin` (its README). `Super+Shift+S` and the button
 in the bar open it; the `Print` keys keep using the plain `shot` and
 `screenrec` scripts, and either can stop a recording started by the other.
 
+The agenda under the clock is empty until you add your calendar accounts
+to `myCalendar` in `waymobar.hs`. Passwords stay out of these files: they go
+in a separate file (`~/.config/waymobar/icloud-password`, `chmod 600`), and
+hasklets keeps its own in `~/.config/hasklets/accounts.json`. Neither is
+ever copied by `install.sh`, which only installs the files it lists.
+
 The wallpaper is whatever `~/.config/wallpaper` links to; point the link at
 another image and bgmonad crossfades to it. For a plain, still wallpaper,
 swap `spawnOnce "bgmonad"` for the swaybg line in `rivermonad.hs`.
 
 Fonts: the bar, the launcher and the notifications use **Inter**; the bar's
 icons are **Material Symbols** (the variable font, Rounded cut:
-`ttf-material-symbols-variable-git` from the AUR, or the `.ttf` from
+`ttf-material-symbols-variable` on Arch, or the `.ttf` from
 [google/material-design-icons](https://github.com/google/material-design-icons)
 in `~/.local/share/fonts/`, then `fc-cache -f`); **Noto Color Emoji** is for
 the emoji picker. The terminal uses *Ubuntu Mono derivative Powerline* (from

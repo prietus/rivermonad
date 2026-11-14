@@ -19,6 +19,15 @@ fi
 # monitors being plugged in). Reload after editing: pkill -x kanshi; setsid -f kanshi
 command -v kanshi >/dev/null && kanshi &
 
+# First run: there is no configuration yet, so rivermonad starts with its
+# defaults (Super+Shift+Enter opens a terminal). When the rivermonad-dotfiles
+# package is installed, say how to get the whole desktop.
+if [ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/rivermonad/rivermonad.hs" ] &&
+   command -v rivermonad-setup >/dev/null && command -v notify-send >/dev/null; then
+  (sleep 3; notify-send -t 20000 "Welcome to rivermonad" \
+    "Super+Shift+Enter opens a terminal. Run rivermonad-setup there to install the complete desktop (bar, wallpaper, widgets, launcher) into ~/.config.") &
+fi
+
 # Keep the window manager running: if rivermonad crashes, start it again
 # (windows survive, river keeps them). Stop when it exits cleanly or when
 # river itself is gone.
