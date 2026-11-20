@@ -62,6 +62,7 @@ main = waymobar def
   , left =
       [ myWorkspaces
       , inClickablePill (layoutName layoutLabel)
+      , inPill hiddenWindows
       ]
   , center = [ inPill (colored subtext (windowTitle 80)) ]
   , right =
@@ -290,3 +291,12 @@ warn limit p = warn' (p >= limit)
 warn' :: Bool -> String -> String
 warn' True s = "<span foreground='" ++ red ++ "'>" ++ s ++ "</span>"
 warn' False s = s
+
+-- Windows hidden with M-S-o (rivermonad's "hidden" workspace): an eye with
+-- a line through it and how many; nothing when there are none. M-o brings
+-- them back, the last one first.
+hiddenWindows :: Widget
+hiddenWindows = Widget $ \env -> pure $ \_ -> do
+  mst <- rivermonadState env
+  let n = sum [ wsWindows w | Just st <- [mst], w <- rsWorkspaces st, wsName w == "hidden" ]
+  pure [ block (sym "visibility_off" ++ num (show n)) | n > 0 ]

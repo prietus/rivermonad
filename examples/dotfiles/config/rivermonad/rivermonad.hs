@@ -41,8 +41,15 @@ myConfig = def
       -- and bgmonad picks it up by itself. The plain, still alternative:
       --   spawnOnce "swaybg -m fill -i ~/.config/wallpaper"
       spawnOnce "bgmonad"
+      -- lock after 10 minutes without input and before suspending (https://github.com/prietus/locklet;
+      -- timings in ~/.config/locklet/config.json, "idle")
+      spawnOnce "locklet idle"
       -- desktop widgets (https://github.com/prietus/hasklets), above the wallpaper
       spawnOnce "hasklets"
+      spawnOnce "luna --background"   -- Borg backups (https://github.com/prietus/luna)
+      -- GeoClue agent: authorizes apps asking for location (where-am-i, firefox...);
+      -- without it GeoClue clients time out
+      spawnOnce "/usr/lib/geoclue-2.0/demos/agent"
   }
 
 myLayout :: Layout Window
@@ -76,13 +83,44 @@ myManageHook = insertPosition Below Newer <> namedScratchpadManageHook scratchpa
     -- the snap reports "firefox_firefox", the .deb "firefox"
     isFirefox = appId =? "firefox_firefox" <||> appId =? "firefox"
 
+-- | Where hidden windows go: a workspace of their own, outside the
+-- configured ones, so waymobar can count them (it skips it as a workspace,
+-- like the scratchpads' NSP) and M-Left/Right skip it too.
+hiddenTag :: WorkspaceId
+hiddenTag = "hidden"
+
+notHidden :: WSType
+notHidden = WSIs ((/= hiddenTag) . W.tag)
+
+-- | Hide the focused window (sway's scratchpad).
+hideWindow :: X ()
+hideWindow = withFocused $ \w -> do
+  ws <- gets windowset
+  let l = W.layout (W.workspace (W.current ws))
+      -- created on demand, at the end so M-Tab never lands on it
+      ensure s | W.tagMember hiddenTag s = s
+               | otherwise = s { W.hidden = W.hidden s ++ [W.Workspace hiddenTag l Nothing] }
+  windows (W.shiftWin hiddenTag w . ensure)
+
+-- | Bring the most recently hidden window to this workspace and focus it.
+unhideWindow :: X ()
+unhideWindow = do
+  ws <- gets windowset
+  case concat [ W.integrate' (W.stack w) | w <- W.workspaces ws, W.tag w == hiddenTag ] of
+    [] -> pure ()
+    w : _ -> windows $ \s -> W.focusWindow w (W.shiftWin (W.currentTag s) w s)
+
 myKeys :: [(String, X ())]
 myKeys =
   [ ("M-b",         spawn "firefox")
   , ("M-z",         sendMessage ToggleLayout)
   , ("M-`",         namedScratchpadAction scratchpads "term")
-  , ("M-<Right>",   nextWS)
-  , ("M-<Left>",    prevWS)
+    -- hide the focused window / bring the last hidden one back (sway's
+    -- scratchpad); each M-o brings the next one
+  , ("M-S-o",       hideWindow)
+  , ("M-o",         unhideWindow)
+  , ("M-<Right>",   moveTo Next notHidden)
+  , ("M-<Left>",    moveTo Prev notHidden)
   , ("M-<Tab>",     toggleWS)
   , ("M-S-f",       withFocused float)
   , ("M-=",         incSpacing 1)
@@ -91,6 +129,8 @@ myKeys =
     -- button in the bar:
     -- screen, window, region, recordings, timer; again closes it
   , ("M-S-s",       spawn "shotlet")
+    -- lock the screen (locklet), also the padlock in the bar's side panel
+  , ("M-S-l",       spawn "locklet")
     -- screenshots (~/Pictures/Screenshots + clipboard), see ~/.local/bin/shot
   , ("<Print>",     spawn "shot")              -- whole screen
   , ("S-<Print>",   spawn "shot region")       -- select a region

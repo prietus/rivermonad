@@ -14,7 +14,7 @@ mirrors the home directory: `config/` is `~/.config/`, `local/bin/` is
 |---|---|
 | `config/rivermonad/rivermonad.hs` | the window manager: layouts, rules, keys |
 | `config/rivermonad/build` | compiles it against a rivermonad checkout (`$RIVERMONAD_SRC`) |
-| `config/waymobar/waymobar.hs` | the bar: workspaces, layout, title, media, network (Wi-Fi menu), weather, volume, CPU, memory, battery, shotlet button, tray, clock with the calendar's agenda, log out; Material Symbols icons |
+| `config/waymobar/waymobar.hs` | the bar: workspaces, layout, hidden windows, title, media, network (Wi-Fi menu), weather, volume, CPU, memory, battery, shotlet button, tray, clock with the calendar's agenda, log out; Material Symbols icons |
 | `config/waymobar/build` | compiles it against a waymobar checkout (`$WAYMOBAR_SRC`) |
 | `config/bgmonad/bgmonad.hs` | the wallpaper: `~/.config/wallpaper` with a slow flow and a parallax between workspaces |
 | `config/bgmonad/build` | compiles it against a bgmonad checkout (`$BGMONAD_SRC`) |
@@ -101,8 +101,10 @@ the emoji picker. The terminal uses *Ubuntu Mono derivative Powerline* (from
 | `Super+=` / `Super+-` | wider / narrower gaps |
 | `Super+1…9`, `Super+Shift+1…9` | go to / move to workspace (`Super+←/→` cycle, `Super+Tab` previous) |
 | `` Super+` `` | scratchpad terminal |
+| `Super+Shift+O`, `Super+O` | hide the focused window / bring the last hidden one back (the bar counts them) |
 | `Super+drag`, `Super+right drag`, `Super+T` | move, resize (makes it float), back to tiling |
 | `Super+Shift+S` | shotlet: the screenshot and recording toolbar |
+| `Super+Shift+L` | lock the screen ([locklet](https://github.com/prietus/locklet)) |
 | `Print`, `Shift+Print`, `Ctrl+Print` | screenshot: screen, region, region + annotate |
 | `F13` instead of `Print` | the same from a Mac keyboard through UTM, where Print Screen arrives as F13 |
 | `Super+Print`, `Super+Shift+Print` | record screen / region (again to stop) |
