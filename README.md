@@ -87,6 +87,12 @@ the `XMonad.` prefix replaced by `Rivermonad.`:
 | `Rivermonad.Util.NamedScratchpad` | toggleable scratchpad windows |
 | `Rivermonad.Util.ExtensibleState` | typed state for your own modules (`XS.get`/`XS.put`) |
 | `Rivermonad.Actions.CycleWS` | `nextWS`, `prevWS`, `toggleWS`, `moveTo Next EmptyWS`, screens |
+| `Rivermonad.Actions.WindowGo` | `runOrRaise "firefox" (appId =? "firefox")`: focus a window, or start it |
+| `Rivermonad.Actions.WindowBringer` | `gotoMenu`, `bringMenu`: pick a window by name in fuzzel |
+| `Rivermonad.Actions.Navigation2D` | `windowGo L`, `windowSwap R`: the neighbour on screen, across monitors |
+| `Rivermonad.Actions.Minimize` | `minimizeWindow`, `withLastMinimized maximizeWindowAndFocus`, `restoreMenu` (sway's scratchpad) |
+| `Rivermonad.Hooks.WindowSwallowing` | `swallowWindows (appId =? "foot") (appId =? "mpv")`: a program takes its terminal's place |
+| `Rivermonad.Util.Dmenu` | `menu`, `menuMap`: menus in fuzzel (or any dmenu) without blocking the window manager |
 | `Rivermonad.Hooks.ManageHelpers` | `composeOne`, `-?>`, `doRectFloat`, `doFullFloat`, `transience` |
 | `Rivermonad.Hooks.InsertPosition` | `insertPosition Below Newer` |
 | `Rivermonad.Hooks.StatusBar` | status line for waybar (see below) |
@@ -97,6 +103,8 @@ the `XMonad.` prefix replaced by `Rivermonad.`:
 | `Rivermonad.Layout.PerWorkspace` | `onWorkspace "web" Full myLayouts` |
 | `Rivermonad.Layout.ThreeColumns` | `ThreeCol`, `ThreeColMid` |
 | `Rivermonad.Layout.Grid` | `Grid` |
+| `Rivermonad.Layout.CenteredIfSingle` | `centeredIfSingle 0.6 1 tiled`: a lone window centred, not stretched |
+| `Rivermonad.Layout.CenteredMaster` | `centerMaster Grid`, `topRightMaster`: the master floats over the others |
 | `Rivermonad.Layout.ResizableTile` | `ResizableTall` with `MirrorShrink`/`MirrorExpand` |
 
 Not ported: modules that draw their own UI in X11 (`Prompt`, `GridSelect`,

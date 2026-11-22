@@ -161,6 +161,7 @@ data WindowInfo = WindowInfo
   , wiDecoSent   :: !(Maybe Bool)       -- ^ last use_ssd (True) / use_csd (False) sent
   , wiGeom       :: !(Maybe Rectangle)  -- ^ last placement, borders included
   , wiAsync      :: !Bool               -- ^ the window prefers tearing (async presentation)
+  , wiPid        :: !(Maybe Int)        -- ^ pid of the process that made it (unreliable: may be reused)
   } deriving (Show)
 
 emptyWindowInfo :: ObjectId -> WindowInfo
@@ -168,7 +169,7 @@ emptyWindowInfo node = WindowInfo
   { wiNode = node, wiAppId = "", wiTitle = "", wiIdentifier = "", wiParent = Nothing
   , wiMinSize = (0, 0), wiMaxSize = (0, 0), wiDims = Nothing, wiDecoration = 3
   , wiManaged = False, wiProposed = Nothing, wiTiled = Nothing, wiFullscreen = Nothing
-  , wiDecoSent = Nothing, wiGeom = Nothing, wiAsync = False }
+  , wiDecoSent = Nothing, wiGeom = Nothing, wiAsync = False, wiPid = Nothing }
 
 data OutputInfo = OutputInfo
   { oiPos        :: !(Maybe (Int, Int))
@@ -239,6 +240,8 @@ data Input
   | InDisconnected String
   | InRestart     -- ^ restart the window manager (SIGUSR1 or after recompiling)
   | InQuit        -- ^ SIGTERM / SIGINT
+  | InRun (X ())  -- ^ an action from another thread (a menu's answer, say),
+                  --   run in the next manage sequence
 
 ------------------------------------------------------------------------------
 -- Configuration
@@ -393,6 +396,7 @@ data XState = XState
   , haveScreens     :: !Bool
   , fullscreen      :: !(S.Set Window)
   , needsCenter     :: !(S.Set Window)  -- ^ floats to center once their size is known
+  , shownWindows    :: !(S.Set Window)  -- ^ on screen after the last layout (not hidden by it)
   , drag            :: !(Maybe Drag)
   , sessionLocked   :: !Bool
   , started         :: !Bool            -- ^ startup hook already ran

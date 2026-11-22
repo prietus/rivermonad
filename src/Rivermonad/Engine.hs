@@ -188,6 +188,7 @@ onWindow w e = case e of
   RiverWindowV1AppId s -> modifyInfo w (\i -> i { wiAppId = utf8 s })
   RiverWindowV1Title s -> modifyInfo w (\i -> i { wiTitle = utf8 s })
   RiverWindowV1Identifier s -> modifyInfo w (\i -> i { wiIdentifier = utf8 s })
+  RiverWindowV1UnreliablePid p -> modifyInfo w (\i -> i { wiPid = if p > 0 then Just (fi p) else Nothing })
   RiverWindowV1Parent p ->
     modifyInfo w (\i -> i { wiParent = if p == nullObject then Nothing else Just p })
   RiverWindowV1DecorationHint h -> modifyInfo w (\i -> i { wiDecoration = fi h })
@@ -555,6 +556,7 @@ applyManage = do
 
     -- Windows on hidden workspaces.
     let visSet = S.fromList visibleWins
+    modify $ \s -> s { shownWindows = visSet }
     io $ forM_ (concatMap (W.integrate' . W.stack) (W.hidden ws)) $ \w ->
       unless (S.member w visSet) (riverWindowV1Hide c w)
 

@@ -39,16 +39,23 @@ library
   exposed-modules:
     Rivermonad
     Rivermonad.Actions.CycleWS
+    Rivermonad.Actions.Minimize
+    Rivermonad.Actions.Navigation2D
+    Rivermonad.Actions.WindowBringer
+    Rivermonad.Actions.WindowGo
     Rivermonad.Config
     Rivermonad.Core
     Rivermonad.Engine
     Rivermonad.Hooks.InsertPosition
+    Rivermonad.Hooks.WindowSwallowing
     Rivermonad.Hooks.ManageHelpers
     Rivermonad.Hooks.StatusBar
     Rivermonad.IPC
     Rivermonad.Input
     Rivermonad.Keysym
     Rivermonad.Layout
+    Rivermonad.Layout.CenteredIfSingle
+    Rivermonad.Layout.CenteredMaster
     Rivermonad.Layout.Grid
     Rivermonad.Layout.LayoutModifier
     Rivermonad.Layout.NoBorders
@@ -65,6 +72,7 @@ library
     Rivermonad.Shadows
     Rivermonad.StackSet
     Rivermonad.Status
+    Rivermonad.Util.Dmenu
     Rivermonad.Util.EZConfig
     Rivermonad.Util.ExtensibleState
     Rivermonad.Util.NamedScratchpad

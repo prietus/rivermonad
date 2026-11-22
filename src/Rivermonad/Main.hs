@@ -154,7 +154,7 @@ runWM cfg = do
       st0 = XState
         { windowset = ws0, windowInfo = M.empty, outputs = M.empty, seats = M.empty
         , keyActions = M.empty, pointerActions = M.empty, pending = [], newWindows = []
-        , outputsDirty = False, haveScreens = False, fullscreen = S.empty, needsCenter = S.empty
+        , outputsDirty = False, haveScreens = False, fullscreen = S.empty, needsCenter = S.empty, shownWindows = S.empty
         , drag = Nothing, sessionLocked = False, started = False
         , restoreState = rsWindows restored, restarting = False, restoreView = rsView restored
         , restoreOrder = rsOrder restored
@@ -229,4 +229,5 @@ mainLoop debug c ch = forever $ do
     InRestart -> requestRestart
     InAction a -> queue (runIPCAction a)
     InQuit -> io exitSuccess
+    InRun x -> queue x
   io (flush c)

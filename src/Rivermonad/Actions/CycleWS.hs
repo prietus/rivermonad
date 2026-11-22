@@ -21,6 +21,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Rivermonad.Core
 import Rivermonad.Operations (windows)
 import qualified Rivermonad.StackSet as W
+import Rivermonad.Actions.Minimize (minimizedTag)
 import Rivermonad.Util.NamedScratchpad (scratchpadWorkspaceTag)
 
 data Direction1D = Next | Prev deriving (Show, Eq)
@@ -44,7 +45,7 @@ shiftToPrev = shiftTo Prev AnyWS
 toggleWS :: X ()
 toggleWS = do
   hs <- gets (W.hidden . windowset)
-  case filter ((/= scratchpadWorkspaceTag) . W.tag) hs of
+  case filter (regular . W.tag) hs of
     (w : _) -> windows (W.greedyView (W.tag w))
     [] -> pure ()
 
@@ -55,13 +56,14 @@ shiftTo :: Direction1D -> WSType -> X ()
 shiftTo dir t = findWorkspace dir t 1 >>= mapM_ (windows . W.shift)
 
 -- | The n-th workspace in the given direction matching the type, in the
--- order of the configuration (the scratchpad workspace is skipped).
+-- order of the configuration (the scratchpad and minimised workspaces are
+-- skipped).
 findWorkspace :: Direction1D -> WSType -> Int -> X (Maybe WorkspaceId)
 findWorkspace dir t n = do
   ws <- gets windowset
   tags <- asks (workspaces . config)
   let idx w = fromMaybe maxBound (elemIndex (W.tag w) tags)
-      ordered = sortOn idx (filter ((/= scratchpadWorkspaceTag) . W.tag) (W.workspaces ws))
+      ordered = sortOn idx (filter (regular . W.tag) (W.workspaces ws))
       visibleTags = map (W.tag . W.workspace) (W.screens ws)
       ok w = case t of
         AnyWS -> True
@@ -101,3 +103,7 @@ shiftPrevScreen = screenBy (-1) >>= mapM_ (windows . W.shift)
 -- | Swap the current workspace with the one on the next screen.
 swapNextScreen = screenBy 1 >>= mapM_ (windows . W.greedyView)
 swapPrevScreen = screenBy (-1) >>= mapM_ (windows . W.greedyView)
+
+-- | Not one of the window manager's own hidden workspaces.
+regular :: WorkspaceId -> Bool
+regular t = t /= scratchpadWorkspaceTag && t /= minimizedTag
