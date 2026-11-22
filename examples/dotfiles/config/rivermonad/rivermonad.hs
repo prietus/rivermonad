@@ -4,19 +4,50 @@
 import Rivermonad
 import qualified Rivermonad.StackSet as W
 
+import Rivermonad.Actions.CopyWindow
 import Rivermonad.Actions.CycleWS
+import Rivermonad.Actions.Minimize
+import Rivermonad.Actions.MostRecentlyUsed
+import Rivermonad.Actions.Navigation2D
+import Rivermonad.Actions.SpawnOn
+import Rivermonad.Actions.Submap
+import Rivermonad.Actions.UpdatePointer
+import Rivermonad.Actions.WindowBringer
+import Rivermonad.Actions.WindowGo
 import Rivermonad.Hooks.InsertPosition
 import Rivermonad.Hooks.ManageHelpers
+import Rivermonad.Hooks.OnPropertyChange
+import Rivermonad.Hooks.RefocusLast
+import Rivermonad.Hooks.WindowSwallowing
+import Rivermonad.Hooks.WorkspaceHistory
+import Rivermonad.Layout.BinarySpacePartition
+import Rivermonad.Layout.CenteredIfSingle
+import Rivermonad.Layout.LimitWindows
+import qualified Rivermonad.Layout.Magnifier as Mag
+import Rivermonad.Layout.Maximize
+import Rivermonad.Layout.MultiToggle (Transformer (..), mkToggle)
+import qualified Rivermonad.Layout.MultiToggle as MT
 import Rivermonad.Layout.NoBorders
 import Rivermonad.Layout.Spacing
 import Rivermonad.Layout.ThreeColumns
 import Rivermonad.Layout.ToggleLayouts
+import Rivermonad.Layout.TwoPane
 import Rivermonad.Util.EZConfig
+import Rivermonad.Util.NamedActions
 import Rivermonad.Util.NamedScratchpad
 import Rivermonad.Util.SpawnOnce
 
 main :: IO ()
-main = rivermonad $ myConfig `additionalKeysP` myKeys
+main = rivermonad $
+  -- closing a window focuses the one you used before it
+  refocusLast $
+  -- Firefox's picture-in-picture window may get its title after it opened:
+  -- float it then too
+  onTitleChange (title =? "Picture-in-Picture" --> doFloat) $
+  -- mpv, imv or zathura started from a terminal take its place until closed
+  swallowWindows (appId =? "foot") (appId =? "mpv" <||> appId =? "imv" <||> appId =? "org.pwmt.zathura") $
+  -- the keys, with a description; M-<F1> lists them in fuzzel
+  addDescrKeysP "M-<F1>" myConfig myKeys
 
 myConfig :: XConfig
 myConfig = def
@@ -27,7 +58,12 @@ myConfig = def
   , focusedBorderColor = "#cba6f7"
   , workspaces         = ["web", "code", "term"] ++ map show [4 .. 9 :: Int]
   , layoutHook         = myLayout
-  , manageHook         = myManageHook
+  , manageHook         = manageSpawn <> myManageHook
+  , logHook            = do
+      workspaceHistoryHook
+      mostRecentlyUsedHook
+      -- the pointer follows keyboard focus changes, only as far as needed
+      updatePointer (0.5, 0.5) (1, 1)
     -- US keys plus Spanish with AltGr (the right Option key on a Mac):
     -- AltGr+n = ñ, AltGr+' then a vowel = á é í ó ú, AltGr+? = ¿, AltGr+1 = ¡
   , input              = def { keyboard = def { kbLayout = "us", kbVariant = "altgr-intl" } }
@@ -44,6 +80,9 @@ myConfig = def
       -- lock after 10 minutes without input and before suspending (https://github.com/prietus/locklet;
       -- timings in ~/.config/locklet/config.json, "idle")
       spawnOnce "locklet idle"
+      -- mail: background sync, notifications and the bar's envelope
+      -- (https://github.com/prietus/orion)
+      spawnOnce "orion daemon"
       -- desktop widgets (https://github.com/prietus/hasklets), above the wallpaper
       spawnOnce "hasklets"
       spawnOnce "luna --background"   -- Borg backups (https://github.com/prietus/luna)
@@ -54,9 +93,14 @@ myConfig = def
 
 myLayout :: Layout Window
 myLayout = Layout $ toggleLayouts (noBorders Full) $ smartBorders $ gapsWithEdge 6 $
-  tiled ||| Mirror tiled ||| ThreeColMid 1 (3 / 100) (1 / 2)
+  -- M-<Backspace> maximises a window over the rest; M-x / M-S-x mirror /
+  -- reflect; M-S-z magnifies the focused window; M-[ / M-] show fewer /
+  -- more windows (no limit until you lower it)
+  maximize $ mkToggle [MIRROR, REFLECTX] $ Mag.magnifierOff $ limitWindows 99 $
+  tiled ||| Mirror tiled ||| ThreeColMid 1 (3 / 100) (1 / 2) ||| emptyBSP ||| TwoPane (3 / 100) (1 / 2)
   where
-    tiled = Tall 1 (3 / 100) (3 / 5)
+    -- a window alone is centred at 60% of the width instead of stretched
+    tiled = centeredIfSingle 0.6 1 (Tall 1 (3 / 100) (3 / 5))
 
 scratchpads :: NamedScratchpads
 scratchpads =
@@ -79,74 +123,75 @@ myManageHook = insertPosition Below Newer <> namedScratchpadManageHook scratchpa
                                              -?> doCenterFloat
   , isFirefox                                -?> doShift "web"
   ]
-  where
-    -- the snap reports "firefox_firefox", the .deb "firefox"
-    isFirefox = appId =? "firefox_firefox" <||> appId =? "firefox"
 
--- | Where hidden windows go: a workspace of their own, outside the
--- configured ones, so waymobar can count them (it skips it as a workspace,
--- like the scratchpads' NSP) and M-Left/Right skip it too.
-hiddenTag :: WorkspaceId
-hiddenTag = "hidden"
+-- | The snap reports "firefox_firefox", the .deb "firefox".
+isFirefox :: Query Bool
+isFirefox = appId =? "firefox_firefox" <||> appId =? "firefox"
 
-notHidden :: WSType
-notHidden = WSIs ((/= hiddenTag) . W.tag)
-
--- | Hide the focused window (sway's scratchpad).
-hideWindow :: X ()
-hideWindow = withFocused $ \w -> do
-  ws <- gets windowset
-  let l = W.layout (W.workspace (W.current ws))
-      -- created on demand, at the end so M-Tab never lands on it
-      ensure s | W.tagMember hiddenTag s = s
-               | otherwise = s { W.hidden = W.hidden s ++ [W.Workspace hiddenTag l Nothing] }
-  windows (W.shiftWin hiddenTag w . ensure)
-
--- | Bring the most recently hidden window to this workspace and focus it.
-unhideWindow :: X ()
-unhideWindow = do
-  ws <- gets windowset
-  case concat [ W.integrate' (W.stack w) | w <- W.workspaces ws, W.tag w == hiddenTag ] of
-    [] -> pure ()
-    w : _ -> windows $ \s -> W.focusWindow w (W.shiftWin (W.currentTag s) w s)
-
-myKeys :: [(String, X ())]
+myKeys :: [(String, String, X ())]
 myKeys =
-  [ ("M-b",         spawn "firefox")
-  , ("M-z",         sendMessage ToggleLayout)
-  , ("M-`",         namedScratchpadAction scratchpads "term")
-    -- hide the focused window / bring the last hidden one back (sway's
-    -- scratchpad); each M-o brings the next one
-  , ("M-S-o",       hideWindow)
-  , ("M-o",         unhideWindow)
-  , ("M-<Right>",   moveTo Next notHidden)
-  , ("M-<Left>",    moveTo Prev notHidden)
-  , ("M-<Tab>",     toggleWS)
-  , ("M-S-f",       withFocused float)
-  , ("M-=",         incSpacing 1)
-  , ("M--",         incSpacing (-1))
-    -- the screenshot toolbar (https://github.com/prietus/shotlet), also the
-    -- button in the bar:
-    -- screen, window, region, recordings, timer; again closes it
-  , ("M-S-s",       spawn "shotlet")
-    -- lock the screen (locklet), also the padlock in the bar's side panel
-  , ("M-S-l",       spawn "locklet")
-    -- screenshots (~/Pictures/Screenshots + clipboard), see ~/.local/bin/shot
-  , ("<Print>",     spawn "shot")              -- whole screen
-  , ("S-<Print>",   spawn "shot region")       -- select a region
-  , ("C-<Print>",   spawn "shot annotate")     -- region, then annotate in swappy
-    -- Print Screen through macOS/UTM (Fn+P on a Drop ALT): a Mac turns it
-    -- into F13, which xkb calls XF86Tools.
+  [ ("M-b",         "Firefox: focus it, or start it",       runOrRaise "firefox" isFirefox)
+  , ("M-g",         "Go to a window (fuzzel)",              gotoMenu)
+  , ("M-S-g",       "Bring a window here (fuzzel)",         bringMenu)
+  , ("M-z",         "Full screen without borders (toggle)", sendMessage ToggleLayout)
+  , ("M-<Backspace>", "Maximise the window (toggle)",       withFocused (sendMessage . maximizeRestore))
+  , ("M-x",         "Mirror the layout (toggle)",           sendMessage (MT.Toggle MIRROR))
+  , ("M-S-x",       "Reflect the layout left-right (toggle)", sendMessage (MT.Toggle REFLECTX))
+  , ("M-C-r",       "Resize mode: h/l, r rotate, s swap; Esc", resizeMode)
+  , ("M-S-z",       "Magnify the focused window (toggle)",  sendMessage Mag.Toggle)
+  , ("M-[",         "Show one window fewer",                decreaseLimit)
+  , ("M-]",         "Show one window more",                 increaseLimit)
+    -- apps started from the launcher open on the workspace it was opened on,
+    -- even if you move on while they load
+  , ("M-p",         "Launcher (fuzzel)",                    spawnHere "fuzzel")
+  , ("M-`",         "Scratchpad terminal",                  namedScratchpadAction scratchpads "term")
+  , ("M-S-o",       "Hide the window",                      withFocused minimizeWindow)
+  , ("M-o",         "Bring back the last hidden window",    withLastMinimized maximizeWindowAndFocus)
+  , ("M-C-o",       "Bring back a hidden window (fuzzel)",  restoreMenu)
+  , ("M-v",         "Window on every workspace",            windows copyToAll)
+  , ("M-S-v",       "Window only on this workspace",        killAllOtherCopies)
+  , ("M1-<Tab>",    "Previous window (anywhere)",           focusPreviousWindow)
+  , ("M-C-w",       "Windows by recent use (fuzzel)",       mruMenu)
+  , ("M-C-<Tab>",   "Workspaces by recent use (fuzzel)",    recentWorkspacesMenu)
+  , ("M-<Right>",   "Next workspace",                       nextWS)
+  , ("M-<Left>",    "Previous workspace",                   prevWS)
+  , ("M-<Tab>",     "Last workspace",                       toggleWS)
+  , ("M-C-<Left>",  "Focus the window to the left",         windowGo L)
+  , ("M-C-<Right>", "Focus the window to the right",        windowGo R)
+  , ("M-C-<Up>",    "Focus the window above",               windowGo U)
+  , ("M-C-<Down>",  "Focus the window below",               windowGo D)
+  , ("M-C-S-<Left>",  "Swap with the window to the left",   windowSwap L)
+  , ("M-C-S-<Right>", "Swap with the window to the right",  windowSwap R)
+  , ("M-C-S-<Up>",    "Swap with the window above",         windowSwap U)
+  , ("M-C-S-<Down>",  "Swap with the window below",         windowSwap D)
+  , ("M-S-f",       "Float the window",                     withFocused float)
+  , ("M-=",         "Wider gaps",                           incSpacing 1)
+  , ("M--",         "Narrower gaps",                        incSpacing (-1))
+    -- the screenshot toolbar (shotlet), also the button in the bar
+  , ("M-S-s",       "Screenshot toolbar (shotlet)",         spawn "shotlet")
+  , ("M-S-l",       "Lock the screen",                      spawn "locklet")
+  , ("M-i",         "Emoji picker",                         spawn "emoji")
   ] ++ concat
-  [ [ (m ++ "<XF86Tools>", a), (m ++ "<F13>", a) ]
-  | (m, a) <- [ ("", spawn "shot"), ("S-", spawn "shot region"), ("C-", spawn "shot annotate")
-              , ("M-", spawn "screenrec"), ("M-S-", spawn "screenrec region") ]
+    -- screenshots (~/Pictures/Screenshots + clipboard), see ~/.local/bin/shot.
+    -- Print Screen through macOS/UTM (Fn+P on a Drop ALT) arrives as F13,
+    -- which xkb calls XF86Tools.
+  [ [ (m ++ "<Print>", d, a), (m ++ "<XF86Tools>", d ++ " (Mac)", a), (m ++ "<F13>", d ++ " (Mac)", a) ]
+  | (m, d, a) <- [ ("",     "Screenshot: whole screen",   spawn "shot")
+                 , ("S-",   "Screenshot: region",         spawn "shot region")
+                 , ("C-",   "Screenshot: region, annotate", spawn "shot annotate")
+                 , ("M-",   "Record the screen (again: stop)", spawn "screenrec")
+                 , ("M-S-", "Record a region (again: stop)",   spawn "screenrec region") ]
   ] ++
-  [ ("M-<Print>",   spawn "screenrec")
-  , ("M-S-<Print>", spawn "screenrec region")
-    -- emoji picker: type "tree", Enter, and 🌳 is typed in the focused window
-  , ("M-i",         spawn "emoji")
-  , ("<XF86AudioRaiseVolume>", spawn "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+")
-  , ("<XF86AudioLowerVolume>", spawn "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-")
-  , ("<XF86AudioMute>",        spawn "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle")
+  [ ("<XF86AudioRaiseVolume>", "Volume up",   spawn "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+")
+  , ("<XF86AudioLowerVolume>", "Volume down", spawn "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-")
+  , ("<XF86AudioMute>",        "Mute",        spawn "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle")
+  ]
+
+-- | M-C-r: h/l (or the arrows) make the focused area smaller/bigger, r and
+-- s rotate and swap the split in the BSP layout; Esc or Enter leaves.
+resizeMode :: X ()
+resizeMode = modeP myConfig
+  [ ("h", sendMessage Shrink), ("l", sendMessage Expand)
+  , ("<Left>", sendMessage Shrink), ("<Right>", sendMessage Expand)
+  , ("r", sendMessage Rotate), ("s", sendMessage Swap)
   ]

@@ -90,18 +90,30 @@ the emoji picker. The terminal uses *Ubuntu Mono derivative Powerline* (from
 
 ## Keys
 
+`Super+F1` lists every key with what it does, in fuzzel (and runs the one
+you pick). The main ones:
+
 | Keys | Action |
 |---|---|
 | `Super+Shift+Enter` | terminal |
-| `Super+P` | launcher |
+| `Super+P` | launcher (apps open on the workspace it was opened on) |
+| `Super+B` | Firefox: focus it, or start it |
+| `Super+G`, `Super+Shift+G` | go to a window / bring it here, picked in fuzzel |
 | `Super+I` | emoji picker |
 | `Super+J` / `Super+K`, `Super+Enter` | focus next / previous, swap with master |
+| `Super+Ctrl+arrows`, `Super+Ctrl+Shift+arrows` | focus / swap with the window beside it on screen |
+| `Alt+Tab`, `Super+Ctrl+W` | previous window anywhere, every window by recent use |
 | `Super+H` / `Super+L` | shrink / grow the master area |
-| `Super+Space`, `Super+Z` | next layout, toggle full screen without borders |
+| `Super+Ctrl+R` | resize mode: `h`/`l`, `r` rotate and `s` swap in BSP, Esc to leave |
+| `Super+Space`, `Super+Z` | next layout (Tall, Mirror, three columns, BSP, two panes), full screen without borders |
+| `Super+Backspace` | maximise the window over the others (again: back) |
+| `Super+X`, `Super+Shift+X`, `Super+Shift+Z` | mirror / reflect the layout, magnify the focused window |
+| `Super+[`, `Super+]` | show one window fewer / more |
 | `Super+=` / `Super+-` | wider / narrower gaps |
-| `Super+1…9`, `Super+Shift+1…9` | go to / move to workspace (`Super+←/→` cycle, `Super+Tab` previous) |
+| `Super+1…9`, `Super+Shift+1…9` | go to / move to workspace (`Super+←/→` cycle, `Super+Tab` previous, `Super+Ctrl+Tab` by recent use) |
+| `Super+V`, `Super+Shift+V` | the window on every workspace / only on this one |
 | `` Super+` `` | scratchpad terminal |
-| `Super+Shift+O`, `Super+O` | hide the focused window / bring the last hidden one back (the bar counts them) |
+| `Super+Shift+O`, `Super+O`, `Super+Ctrl+O` | hide the window / bring the last hidden one back / pick one in fuzzel (the bar counts them) |
 | `Super+drag`, `Super+right drag`, `Super+T` | move, resize (makes it float), back to tiling |
 | `Super+Shift+S` | shotlet: the screenshot and recording toolbar |
 | `Super+Shift+L` | lock the screen ([locklet](https://github.com/prietus/locklet)) |
@@ -109,6 +121,12 @@ the emoji picker. The terminal uses *Ubuntu Mono derivative Powerline* (from
 | `F13` instead of `Print` | the same from a Mac keyboard through UTM, where Print Screen arrives as F13 |
 | `Super+Print`, `Super+Shift+Print` | record screen / region (again to stop) |
 | `Super+Q`, `Super+Shift+Q` | recompile and restart rivermonad, end the session |
+
+The pointer follows the focus when you change window with the keyboard;
+closing a window focuses the one you used before it; `mpv`, `imv` and
+`zathura` started from a terminal take its place until they close. In the
+screen's corners (waymobar's hot corners): top left opens the launcher,
+bottom right locks the screen.
 
 ## Notes for virtual machines
 

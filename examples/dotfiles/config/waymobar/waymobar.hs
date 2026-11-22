@@ -59,6 +59,11 @@ main = waymobar def
   , menuHighlight = surface0
   , widgetSpacing = 6
   , edgePadding = 0
+    -- hot corners: rest the pointer in the corner a moment
+  , hotCorners =
+      [ (TopLeftCorner, spawn "fuzzel")        -- the launcher
+      , (BottomRightCorner, spawn "locklet")   -- lock the screen (locklet)
+      ]
   , left =
       [ myWorkspaces
       , inClickablePill (layoutName layoutLabel)
