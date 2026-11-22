@@ -92,6 +92,15 @@ the `XMonad.` prefix replaced by `Rivermonad.`:
 | `Rivermonad.Actions.Navigation2D` | `windowGo L`, `windowSwap R`: the neighbour on screen, across monitors |
 | `Rivermonad.Actions.Minimize` | `minimizeWindow`, `withLastMinimized maximizeWindowAndFocus`, `restoreMenu` (sway's scratchpad) |
 | `Rivermonad.Hooks.WindowSwallowing` | `swallowWindows (appId =? "foot") (appId =? "mpv")`: a program takes its terminal's place |
+| `Rivermonad.Actions.CopyWindow` | `windows copyToAll`, `kill1`: one window on several workspaces |
+| `Rivermonad.Actions.SpawnOn` | `spawnHere`, `spawnOn "web"` with `manageSpawn`: open where it was started |
+| `Rivermonad.Actions.UpdatePointer` | `updatePointer (0.5, 0.5) (1, 1)` in the log hook: the pointer follows the focus |
+| `Rivermonad.Actions.MostRecentlyUsed` | `focusPreviousWindow`, `mruMenu`: windows by recent use |
+| `Rivermonad.Actions.Submap` | `submapP`, `modeP`: key sequences and modes (`M-r` then `h`/`l`) |
+| `Rivermonad.Hooks.RefocusLast` | `refocusLast`: closing a window focuses the one used before it |
+| `Rivermonad.Hooks.OnPropertyChange` | `onTitleChange`, `onAppIdChange`: rules for windows that rename themselves |
+| `Rivermonad.Hooks.WorkspaceHistory` | `workspaceHistoryHook`, `recentWorkspacesMenu` |
+| `Rivermonad.Util.NamedActions` | `addDescrKeysP "M-<F1>"`: keys with descriptions and a cheat sheet in fuzzel |
 | `Rivermonad.Util.Dmenu` | `menu`, `menuMap`: menus in fuzzel (or any dmenu) without blocking the window manager |
 | `Rivermonad.Hooks.ManageHelpers` | `composeOne`, `-?>`, `doRectFloat`, `doFullFloat`, `transience` |
 | `Rivermonad.Hooks.InsertPosition` | `insertPosition Below Newer` |
@@ -105,6 +114,12 @@ the `XMonad.` prefix replaced by `Rivermonad.`:
 | `Rivermonad.Layout.Grid` | `Grid` |
 | `Rivermonad.Layout.CenteredIfSingle` | `centeredIfSingle 0.6 1 tiled`: a lone window centred, not stretched |
 | `Rivermonad.Layout.CenteredMaster` | `centerMaster Grid`, `topRightMaster`: the master floats over the others |
+| `Rivermonad.Layout.BinarySpacePartition` | `emptyBSP`: each window splits the focused one (`Rotate`, `Swap`, `Shrink`/`Expand`) |
+| `Rivermonad.Layout.TwoPane` | `TwoPane (3/100) (1/2)`: master and focused window side by side |
+| `Rivermonad.Layout.Magnifier` | `magnifier Grid`: the focused window drawn bigger |
+| `Rivermonad.Layout.Maximize` | `maximize`, `maximizeRestore`: one window over the rest, gaps and bar kept |
+| `Rivermonad.Layout.LimitWindows` | `limitWindows 3`, `increaseLimit`: show at most n windows |
+| `Rivermonad.Layout.MultiToggle` | `mkToggle [FULL, MIRROR, NOBORDERS, REFLECTX]`, `Toggle MIRROR` |
 | `Rivermonad.Layout.ResizableTile` | `ResizableTall` with `MirrorShrink`/`MirrorExpand` |
 
 Not ported: modules that draw their own UI in X11 (`Prompt`, `GridSelect`,

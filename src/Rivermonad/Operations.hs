@@ -3,7 +3,7 @@
 module Rivermonad.Operations
   ( windows, refresh, withFocused, focus
   , kill, killWindow
-  , spawn
+  , spawn, spawnPID
   , sendMessage, broadcastMessage, setLayout, setLayoutOf
   , float, sinkWindow, windowGeometry, setFloatGeometry, screenOfWindow
   , toggleFullscreen
@@ -25,6 +25,7 @@ import qualified Data.Set as S
 import System.Exit (ExitCode (..), exitSuccess)
 import System.IO (hPutStrLn, stderr)
 import System.Posix.Process (createSession, executeFile, exitImmediately, forkProcess, getProcessStatus)
+import System.Posix.Types (ProcessID)
 
 import Rivermonad.Core
 import Rivermonad.Layout
@@ -73,6 +74,19 @@ spawn cmd = io $ void $ E.try @E.SomeException $ do
     _ <- forkProcess (executeFile "/bin/sh" False ["-c", cmd] Nothing)
     exitImmediately ExitSuccess
   void (getProcessStatus True False pid)
+
+-- | Run a shell command and return its pid (for "Rivermonad.Actions.SpawnOn").
+-- The process is reaped in the background when it exits.
+spawnPID :: String -> X (Maybe ProcessID)
+spawnPID cmd = io $ do
+  r <- E.try @E.SomeException $ forkProcess $ do
+    _ <- createSession
+    executeFile "/bin/sh" False ["-c", cmd] Nothing
+  case r of
+    Left _ -> pure Nothing
+    Right pid -> do
+      _ <- forkIO (void (E.try @E.SomeException (getProcessStatus True False pid)))
+      pure (Just pid)
 
 -- | Send a message to the layout of the current workspace.
 sendMessage :: Message a => a -> X ()

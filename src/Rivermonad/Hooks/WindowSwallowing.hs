@@ -1,4 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 -- | A program started from a terminal takes the terminal's place, as in
 -- @XMonad.Hooks.WindowSwallowing@: run @mpv video.mkv@ or @imv photo.png@
 -- in foot and the video or image appears where the terminal was; close it
@@ -21,7 +20,6 @@ module Rivermonad.Hooks.WindowSwallowing
   , swallowEventHook
   ) where
 
-import Control.Exception (SomeException, evaluate, try)
 import Control.Monad (filterM)
 import qualified Data.Map.Strict as M
 import Data.Maybe (listToMaybe)
@@ -32,6 +30,7 @@ import Rivermonad.Operations (windows)
 import qualified Rivermonad.StackSet as W
 import qualified Rivermonad.Util.ExtensibleState as XS
 import Rivermonad.Util.NamedScratchpad (scratchpadWorkspaceTag)
+import Rivermonad.Util.Process (ancestorsOf)
 import Rivermonad.Wayland.Protocol (Event (..), RiverWindowV1Event (..))
 
 -- | Child window identifier -> the identifier of the terminal it swallowed.
@@ -98,23 +97,6 @@ findParent q w = do
       ancestors <- io (ancestorsOf pid)
       let byPid a = [ p | (p, i) <- M.toList infos, p /= w, wiPid i == Just a, W.member p ws ]
       listToMaybe <$> filterM (runQuery q) (concatMap byPid ancestors)
-
--- | Parent, grandparent... of a process, from @/proc@.
-ancestorsOf :: Int -> IO [Int]
-ancestorsOf = go (64 :: Int)
-  where
-    go 0 _ = pure []
-    go n pid = parentOf pid >>= \case
-      Just pp | pp > 1 -> (pp :) <$> go (n - 1) pp
-      _ -> pure []
-    parentOf pid = do
-      r <- try (readFile ("/proc/" ++ show pid ++ "/stat") >>= \s -> evaluate (length s) >> pure s)
-      pure $ case r of
-        Left (_ :: SomeException) -> Nothing
-        -- the command is in parentheses and may contain spaces
-        Right s -> case words (drop 1 (dropWhile (/= ')') (reverse (dropWhile (/= ')') (reverse s))))) of
-          _state : ppid : _ | [(n, "")] <- reads ppid -> Just n
-          _ -> Nothing
 
 -- | The child @w@ takes the place of the terminal @p@, which goes to the
 -- hidden scratchpad workspace.

@@ -38,9 +38,14 @@ library
   default-extensions: LambdaCase
   exposed-modules:
     Rivermonad
+    Rivermonad.Actions.CopyWindow
     Rivermonad.Actions.CycleWS
     Rivermonad.Actions.Minimize
+    Rivermonad.Actions.MostRecentlyUsed
     Rivermonad.Actions.Navigation2D
+    Rivermonad.Actions.SpawnOn
+    Rivermonad.Actions.Submap
+    Rivermonad.Actions.UpdatePointer
     Rivermonad.Actions.WindowBringer
     Rivermonad.Actions.WindowGo
     Rivermonad.Config
@@ -49,21 +54,30 @@ library
     Rivermonad.Hooks.InsertPosition
     Rivermonad.Hooks.WindowSwallowing
     Rivermonad.Hooks.ManageHelpers
+    Rivermonad.Hooks.OnPropertyChange
+    Rivermonad.Hooks.RefocusLast
+    Rivermonad.Hooks.WorkspaceHistory
     Rivermonad.Hooks.StatusBar
     Rivermonad.IPC
     Rivermonad.Input
     Rivermonad.Keysym
     Rivermonad.Layout
+    Rivermonad.Layout.BinarySpacePartition
     Rivermonad.Layout.CenteredIfSingle
     Rivermonad.Layout.CenteredMaster
     Rivermonad.Layout.Grid
     Rivermonad.Layout.LayoutModifier
+    Rivermonad.Layout.LimitWindows
+    Rivermonad.Layout.Magnifier
+    Rivermonad.Layout.Maximize
+    Rivermonad.Layout.MultiToggle
     Rivermonad.Layout.NoBorders
     Rivermonad.Layout.PerWorkspace
     Rivermonad.Layout.ResizableTile
     Rivermonad.Layout.Spacing
     Rivermonad.Layout.ThreeColumns
     Rivermonad.Layout.ToggleLayouts
+    Rivermonad.Layout.TwoPane
     Rivermonad.JSON
     Rivermonad.Main
     Rivermonad.ManageHook
@@ -75,7 +89,9 @@ library
     Rivermonad.Util.Dmenu
     Rivermonad.Util.EZConfig
     Rivermonad.Util.ExtensibleState
+    Rivermonad.Util.NamedActions
     Rivermonad.Util.NamedScratchpad
+    Rivermonad.Util.Process
     Rivermonad.Util.SpawnOnce
     Rivermonad.Wayland.Protocol
     Rivermonad.Wayland.Wire
