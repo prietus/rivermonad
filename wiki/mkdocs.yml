@@ -1,0 +1,66 @@
+site_name: rivermonad
+site_url: https://rivermonad.priet.us/
+site_description: An xmonad-style tiling window manager for Wayland, configured in Haskell.
+repo_url: https://github.com/prietus/rivermonad
+repo_name: prietus/rivermonad
+edit_uri: edit/main/wiki/docs/
+copyright: rivermonad is BSD-3-Clause licensed.
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.details
+
+nav:
+  - Home: index.md
+  - Installation: install.md
+  - Getting started: tutorial.md
+  - Configuration:
+      - configuration.md
+      - Default keys: keys.md
+      - Layouts: layouts.md
+      - Manage hooks: managehooks.md
+      - Input devices: input.md
+      - Coming from xmonad: xmonad.md
+  - Modules: modules/   # filled in by tools/wiki/gen-modules.py
+  - The desktop: desktop.md
+  - IPC: ipc.md
+  - FAQ: faq.md
+  - Development: development.md

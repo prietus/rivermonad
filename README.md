@@ -4,6 +4,10 @@ An xmonad-style tiling window manager for Wayland. It is to xmonad what sway is
 to i3: the same model and the same kind of Haskell configuration file, on a
 Wayland compositor.
 
+**Documentation: [rivermonad.priet.us](https://rivermonad.priet.us)**:
+installation, a getting-started tutorial, the configuration reference, a
+page for every module, IPC and FAQ.
+
 ![rivermonad demo: tiling, layouts, floating, workspaces, emoji picker, screenshot, launcher and scratchpad](docs/demo.gif)
 
 *Tall, Mirror and three-column layouts with 1 px gaps, resizing, full
@@ -78,7 +82,8 @@ the stable `river-window-management-v1` protocol. Because of this split:
 ## Contrib modules
 
 Ports of the most used xmonad-contrib modules ship in the same package, with
-the `XMonad.` prefix replaced by `Rivermonad.`:
+the `XMonad.` prefix replaced by `Rivermonad.` (each one is documented on
+[the site](https://rivermonad.priet.us/modules/)):
 
 | Module | What it does |
 |---|---|
@@ -328,6 +333,10 @@ The same is available on the IPC socket (`rivermonad --ipc
 * Restarts identify windows by river's stable window identifier.
 
 ## Development
+
+The documentation site is built from `wiki/` (the module pages are
+generated from each module's header comment):
+`tools/wiki/publish.sh --serve` to preview, `--upload` to publish.
 
 ```sh
 tools/regen.sh      # regenerate Rivermonad/Wayland/Protocol.hs from protocol/*.xml

@@ -7,3 +7,9 @@ icloud-password
 accounts.json
 *.bak
 *.bak-*
+
+# the wiki: generated files and the built site
+wiki/site/
+wiki/mkdocs.gen.yml
+wiki/docs/img/
+wiki/docs/modules/
