@@ -96,6 +96,22 @@ for f in $files; do
   copy "$src/$f" "$(dest "$f")"
 done
 
+# Dark GTK and libadwaita applications, to go with the dark desktop. Only
+# if they are still at the defaults: a choice of yours is kept.
+dark() {   # dark KEY VALUE DEFAULT
+  command -v gsettings >/dev/null || return 0
+  cur="$(gsettings get org.gnome.desktop.interface "$1" 2>/dev/null)" || return 0
+  if [ "$cur" = "$3" ]; then
+    if [ "$list" = yes ]; then
+      echo "setting   $1 $2 (now $cur)"
+    else
+      gsettings set org.gnome.desktop.interface "$1" "$2" && echo "set       $1 $2"
+    fi
+  fi
+}
+dark color-scheme prefer-dark "'default'"
+dark gtk-theme Adwaita-dark "'Adwaita'"
+
 [ "$list" = yes ] && exit 0
 
 if [ ! -e "$config/wallpaper" ]; then

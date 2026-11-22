@@ -7,7 +7,7 @@
 %{?haskell_setup}
 
 Name:           %{pkg_name}
-Version:        0.2.0
+Version:        0.3.0
 Release:        1%{?dist}
 Summary:        Xmonad-style tiling window manager for the river Wayland compositor
 
@@ -162,6 +162,14 @@ desktop-file-validate %{buildroot}%{_datadir}/wayland-sessions/%{name}.desktop
 
 
 %changelog
+* Sun Nov 22 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.3.0-1
+- 25 new contrib modules: WindowGo, WindowBringer, Navigation2D, Minimize,
+  CopyWindow, SpawnOn, UpdatePointer, MostRecentlyUsed, Submap, RefocusLast,
+  OnPropertyChange, WorkspaceHistory, WindowSwallowing, NamedActions, Dmenu,
+  BinarySpacePartition, TwoPane, Magnifier, Maximize, LimitWindows,
+  MultiToggle, CenteredIfSingle, CenteredMaster
+- examples/dotfiles use them; rivermonad-setup sets dark GTK themes
+
 * Sat Nov 14 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.2.0-1
 - IPC "Windows" request; new floats bigger than the screen are shrunk
 - examples/dotfiles: bgmonad, hasklets, shotlet, waymobar calendar; rivermonad-setup

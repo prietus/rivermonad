@@ -215,14 +215,15 @@ install them in this order:
    widgets (the first build compiles the GTK bindings and takes a while)
 4. [shotlet](https://aur.archlinux.org/packages/shotlet), the screenshot
    and recording toolbar
-5. [rivermonad](https://aur.archlinux.org/packages/rivermonad) and
+5. [locklet](https://aur.archlinux.org/packages/locklet), the lock screen
+6. [rivermonad](https://aur.archlinux.org/packages/rivermonad) and
    [rivermonad-dotfiles](https://aur.archlinux.org/packages/rivermonad-dotfiles),
    which are built together from the same PKGBUILD
 
 By hand:
 
 ```sh
-for p in waymobar bgmonad hasklets shotlet rivermonad; do
+for p in waymobar bgmonad hasklets shotlet locklet rivermonad; do
   git clone https://aur.archlinux.org/$p.git
   (cd $p && makepkg -si)
 done

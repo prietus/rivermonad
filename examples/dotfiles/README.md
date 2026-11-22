@@ -69,6 +69,16 @@ and link it into `~/.local/bin` (its README). `Super+Shift+S` and the button
 in the bar open it; the `Print` keys keep using the plain `shot` and
 `screenrec` scripts, and either can stop a recording started by the other.
 
+[locklet](https://github.com/prietus/locklet) locks the screen
+(`Super+Shift+L`, the bottom-right hot corner, and on its own after 10
+minutes without input). [orion](https://github.com/prietus/orion) (mail)
+and [luna](https://github.com/prietus/luna) (Borg backups) are started only
+if they are installed; they are not packaged.
+
+`rivermonad-setup` also makes GTK and libadwaita applications dark
+(`gsettings`: `color-scheme` `prefer-dark`, `gtk-theme` `Adwaita-dark`),
+unless you already chose something else.
+
 The agenda under the clock is empty until you add your calendar accounts
 to `myCalendar` in `waymobar.hs`. Passwords stay out of these files: they go
 in a separate file (`~/.config/waymobar/icloud-password`, `chmod 600`), and

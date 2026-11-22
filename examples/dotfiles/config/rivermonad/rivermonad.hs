@@ -82,13 +82,16 @@ myConfig = def
       spawnOnce "locklet idle"
       -- mail: background sync, notifications and the bar's envelope
       -- (https://github.com/prietus/orion)
-      spawnOnce "orion daemon"
+      -- (not packaged: started only if it is installed)
+      spawnOnce "command -v orion >/dev/null && exec orion daemon"
       -- desktop widgets (https://github.com/prietus/hasklets), above the wallpaper
       spawnOnce "hasklets"
-      spawnOnce "luna --background"   -- Borg backups (https://github.com/prietus/luna)
+      -- Borg backups (https://github.com/prietus/luna; not packaged). The AUR
+      -- has an unrelated "luna": start it only if it is the Borg client.
+      spawnOnce "l=$(command -v luna) && grep -qa BorgBase \"$l\" && exec luna --background"
       -- GeoClue agent: authorizes apps asking for location (where-am-i, firefox...);
       -- without it GeoClue clients time out
-      spawnOnce "/usr/lib/geoclue-2.0/demos/agent"
+      spawnOnce "a=/usr/lib/geoclue-2.0/demos/agent; [ -x $a ] && exec $a"
   }
 
 myLayout :: Layout Window
