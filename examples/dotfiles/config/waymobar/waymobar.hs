@@ -63,7 +63,7 @@ main = waymobar def
   , osd = Just myOsd
     -- hot corners: rest the pointer in the corner a moment
   , hotCorners =
-      [ (TopLeftCorner, spawn "fuzzel")        -- the launcher
+      [ (TopLeftCorner, spawn "spacelet")      -- the overview of the workspaces
       , (BottomRightCorner, spawn "locklet")   -- lock the screen (locklet)
       ]
   , left =

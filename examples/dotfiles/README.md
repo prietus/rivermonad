@@ -139,7 +139,7 @@ you pick). The main ones:
 The pointer follows the focus when you change window with the keyboard;
 closing a window focuses the one you used before it; `mpv`, `imv` and
 `zathura` started from a terminal take its place until they close. In the
-screen's corners (waymobar's hot corners): top left opens the launcher,
+screen's corners (waymobar's hot corners): top left opens the overview of the workspaces,
 bottom right locks the screen.
 
 ## Notes for virtual machines
