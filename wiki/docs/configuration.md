@@ -79,6 +79,7 @@ exec env -u XDG_CACHE_HOME -u XDG_CONFIG_HOME cabal -v0 exec -- \
 | `allowTearing` | `True` | fullscreen windows that ask for it (games) present without vsync |
 | `input` | system defaults | keyboard, touchpad and mouse, see [Input devices](input.md) |
 | `shadows` | `Nothing` | drop shadows under windows, see below |
+| `ipcActions` | `[]` | actions scripts can run by name over the [IPC socket](ipc.md#named-actions-actions-and-run-name) |
 
 ## Keys
 

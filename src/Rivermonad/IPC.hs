@@ -20,6 +20,7 @@ module Rivermonad.IPC
   , startIPCServer
   , publishIPC
   , publishWindowsIPC
+  , publishActionsIPC
   , runIPCClient
   ) where
 
@@ -40,13 +41,14 @@ import System.Exit (exitFailure)
 import System.FilePath ((</>))
 import System.IO (hFlush, hPutStrLn, stderr, stdout)
 
-import Rivermonad.Core (IPCAction (..), Input (..))
+import Rivermonad.Core (IPCAction (..), Input (..), WindowCriteria (..))
 import qualified Rivermonad.JSON as J
 
 data IPCServer = IPCServer
   { srvSubs :: MVar [NS.Socket]
   , srvLast :: IORef B.ByteString
   , srvWindows :: IORef B.ByteString
+  , srvActions :: IORef [String]
   }
 
 -- | The socket of the rivermonad managing /this/ Wayland display, if it
@@ -78,7 +80,7 @@ startIPCServer ch = do
     NS.bind sock (NS.SockAddrUnix path)
     NS.listen sock 16
     setEnv "RIVERMONAD_SOCKET" path
-    srv <- IPCServer <$> newMVar [] <*> newIORef B.empty <*> newIORef (BC.pack "{\"Windows\":[]}")
+    srv <- IPCServer <$> newMVar [] <*> newIORef B.empty <*> newIORef (BC.pack "{\"Windows\":[]}") <*> newIORef []
     void $ forkIO $ forever $ do
       (client, _) <- NS.accept sock
       NS.withFdSocket client NS.setCloseOnExecIfNeeded
@@ -104,6 +106,16 @@ handleClient srv ch s = do
     Just (J.JStr "Windows") -> do
       void (sendLine s =<< readIORef (srvWindows srv))
       NS.close s
+    Just (J.JStr "Actions") -> do
+      names <- readIORef (srvActions srv)
+      void (sendLine s (J.renderUtf8 (J.obj [("Actions", J.JArr (map J.str names))])))
+      NS.close s
+    Just (J.JObj [("Action", a)]) | Just (IPCRun n) <- parseAction a -> do
+      names <- readIORef (srvActions srv)
+      if n `elem` names
+        then writeChan ch (InAction (IPCRun n)) >> void (sendLine s (J.renderUtf8 (J.obj [("Ok", J.str "Handled")])))
+        else void (sendLine s (J.renderUtf8 (J.obj [("Err", J.str ("no action called " ++ show n))])))
+      NS.close s
     Just (J.JObj [("Action", a)]) | Just act <- parseAction a -> do
       writeChan ch (InAction act)
       void (sendLine s (J.renderUtf8 (J.obj [("Ok", J.str "Handled")])))
@@ -123,7 +135,43 @@ parseAction v = case v of
   J.JObj [("FocusWorkspace", J.JStr t)] -> Just (IPCFocusWorkspace t)
   J.JObj [("ViewWorkspace", J.JStr t)] -> Just (IPCGreedyViewWorkspace t)
   J.JObj [("JumpToLayout", J.JStr l)] -> Just (IPCJumpToLayout l)
+  J.JStr "NextWorkspace" -> Just IPCNextWorkspace
+  J.JStr "PrevWorkspace" -> Just IPCPrevWorkspace
+  J.JStr "ToggleWorkspace" -> Just IPCToggleWorkspace
+  J.JObj [("MoveToWorkspace", J.JStr t)] -> Just (IPCMoveToWorkspace t)
+  J.JStr "Close" -> Just IPCClose
+  J.JStr "ToggleFloating" -> Just IPCToggleFloating
+  J.JStr "ToggleFullscreen" -> Just IPCToggleFullscreen
+  J.JStr "FocusMaster" -> Just IPCFocusMaster
+  J.JStr "SwapMaster" -> Just IPCSwapMaster
+  J.JStr "Shrink" -> Just IPCShrink
+  J.JStr "Expand" -> Just IPCExpand
+  J.JObj [("IncMaster", J.JNum n)] -> Just (IPCIncMaster (round n))
+  J.JObj [("FocusWindow", c)] -> IPCFocusWindow <$> criteria c
+  J.JObj [("CloseWindow", c)] -> IPCCloseWindow <$> criteria c
+  J.JObj [("MoveWindow", J.JObj fs)]
+    | Just (J.JStr t) <- lookup "workspace" fs ->
+        (`IPCMoveWindow` t) <$> criteria (J.JObj (filter ((/= "workspace") . fst) fs))
+  J.JObj [("Spawn", J.JStr cmd)] -> Just (IPCSpawn cmd)
+  J.JObj [("Run", J.JStr n)] -> Just (IPCRun n)
   _ -> Nothing
+
+-- | @{"app_id":"foot","title":"vim","id":"..."}@: at least one of them.
+criteria :: J.JValue -> Maybe WindowCriteria
+criteria (J.JObj fs)
+  | all ((`elem` ["app_id", "title", "id"]) . fst) fs
+  , c@(WindowCriteria a t i) <- WindowCriteria (str "app_id") (str "title") (str "id")
+  , a /= Nothing || t /= Nothing || i /= Nothing = Just c
+  where
+    str k = case lookup k fs of
+      Just (J.JStr v) -> Just v
+      _ -> Nothing
+criteria _ = Nothing
+
+-- | The names scripts can run with @{"Action":{"Run":NAME}}@, for the
+-- @"Actions"@ request.
+publishActionsIPC :: IPCServer -> [String] -> IO ()
+publishActionsIPC srv = writeIORef (srvActions srv)
 
 -- | Send a state line to every subscriber, if it changed.
 publishIPC :: IPCServer -> B.ByteString -> IO ()

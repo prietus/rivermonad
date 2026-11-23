@@ -39,6 +39,7 @@ defaultConfig = XConfig
   , allowTearing = True
   , input = def
   , shadows = Nothing
+  , ipcActions = []
   }
 
 defaultLayout :: Layout Window

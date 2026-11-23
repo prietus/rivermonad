@@ -75,7 +75,11 @@ the stable `river-window-management-v1` protocol. Because of this split:
   position and focus, every workspace's layout state and persistent
   extensible state
 * an IPC socket (newline-delimited JSON, like niri's): a state event stream
-  and actions, usable from scripts with `rivermonad --ipc`
+  and actions, usable from scripts with `rivermonad --ipc`: workspaces,
+  layout, windows chosen by app id or title (like sway's criteria), shell
+  commands and any action of your configuration by name, which makes room
+  for touchpad gestures through libinput-gestures (see
+  [the IPC page](https://rivermonad.priet.us/ipc/))
 * xmonad's extension points: layouts in `X` (`doLayout`, `handleMessage`),
   `LayoutModifier`, `ExtensibleState`, `handleEventHook`
 

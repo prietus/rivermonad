@@ -77,6 +77,9 @@ myConfig = def
       -- and bgmonad picks it up by itself. The plain, still alternative:
       --   spawnOnce "swaybg -m fill -i ~/.config/wallpaper"
       spawnOnce "bgmonad"
+      -- asks for your password when an application needs administrator rights
+      -- (Disks, date and time, package installers...); without an agent they fail
+      spawnOnce "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
       -- lock after 10 minutes without input and before suspending (https://github.com/prietus/locklet;
       -- timings in ~/.config/locklet/config.json, "idle")
       spawnOnce "locklet idle"
@@ -119,6 +122,7 @@ myManageHook = insertPosition Below Newer <> namedScratchpadManageHook scratchpa
   , isFixedSize                              -?> doCenterFloat   -- min size = max size
   , appId =? "xdg-desktop-portal-gtk"        -?> doCenterFloat   -- open/save dialogs (snaps, portals)
   , appId =? "pavucontrol"                   -?> doCenterFloat
+  , appId =? "polkit-gnome-authentication-agent-1" -?> doCenterFloat   -- password prompts
   , appId =? "dev.hasklets.Settings"         -?> doCenterFloat   -- hasklets --config
   , title =? "Picture-in-Picture"            -?> doFloat
     -- Firefox opens these as independent windows (no parent):

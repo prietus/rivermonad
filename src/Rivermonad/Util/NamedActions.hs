@@ -9,6 +9,12 @@
 -- @M-<F1>@ opens the list ("M-b    Firefox (focus or start)"); typing
 -- filters it and Enter runs the chosen action, so it doubles as a command
 -- palette. The keys are added like 'additionalKeysP' does.
+--
+-- Every action can also be run from scripts over IPC, by its key or its
+-- description (they are added to 'ipcActions'):
+--
+-- > rivermonad --ipc '{"Action":{"Run":"M-g"}}'
+-- > rivermonad --ipc '"Actions"'      # the names
 module Rivermonad.Util.NamedActions
   ( addDescrKeysP
   , showKeysMenu
@@ -23,7 +29,9 @@ import Rivermonad.Util.EZConfig (additionalKeysP)
 -- | Add described keys, and a key that shows them all.
 addDescrKeysP :: String -> XConfig -> [(String, String, X ())] -> XConfig
 addDescrKeysP helpKey conf ks =
-  additionalKeysP conf ((helpKey, showKeysMenu ks) : [ (k, a) | (k, _, a) <- ks ])
+  (additionalKeysP conf ((helpKey, showKeysMenu ks) : [ (k, a) | (k, _, a) <- ks ]))
+    { ipcActions = ipcActions conf ++ concat [ [(k, a), (d, a)] | (k, d, a) <- ks ]
+                                   ++ [(helpKey, showKeysMenu ks)] }
 
 -- | The cheat sheet: pick an entry to run it.
 showKeysMenu :: [(String, String, X ())] -> X ()

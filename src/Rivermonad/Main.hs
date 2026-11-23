@@ -33,7 +33,7 @@ import Rivermonad.Config (defaultConfig)
 import Rivermonad.Engine
 import Rivermonad.Recompile
 import Rivermonad.Status (runStatusClient)
-import Rivermonad.IPC (publishIPC, publishWindowsIPC, runIPCClient, startIPCServer)
+import Rivermonad.IPC (publishActionsIPC, publishIPC, publishWindowsIPC, runIPCClient, startIPCServer)
 import Rivermonad.Operations (queue)
 import qualified Rivermonad.StackSet as W
 import Rivermonad.Wayland.Protocol
@@ -143,6 +143,7 @@ runWM cfg = do
 
   restored <- loadRestartState
   ipcSrv <- startIPCServer ch
+  forM_ ipcSrv $ \srv -> publishActionsIPC srv (map fst (ipcActions cfg))
   let g = Globals { gRegistry = registry, gWm = wm, gWmVersion = fromIntegral wmv, gXkb = xkb, gLayerShell = fst <$> mls
                   , gInputManager = fst <$> mim, gXkbConfig = fst <$> mxc, gLibinput = fst <$> mli
                   , gCompositor = fst <$> mcomp, gShm = fst <$> mshm }

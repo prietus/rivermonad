@@ -9,7 +9,7 @@ module Rivermonad.Core
     Window, WorkspaceId, ScreenId (..), ScreenDetail (..), WindowSet, WindowSpace
   , Rectangle (..)
   , WindowInfo (..), OutputInfo (..), SeatInfo (..), Drag (..), DragKind (..)
-  , Globals (..), Input (..), IPCAction (..), RestartNow (..)
+  , Globals (..), Input (..), IPCAction (..), WindowCriteria (..), RestartNow (..)
     -- * Layouts
   , LayoutClass (..), Layout (..), readsLayout
   , Message, SomeMessage (..), fromMessage
@@ -231,7 +231,31 @@ data IPCAction
   | IPCNextKeyboardLayout
   | IPCLogout                         -- ^ close every window, then end the session
   | IPCLogoutCheck Int                -- ^ internal: the graceful logout timed out
+  | IPCNextWorkspace                  -- ^ the next / previous configured workspace
+  | IPCPrevWorkspace
+  | IPCToggleWorkspace                -- ^ back to the previous one
+  | IPCMoveToWorkspace WorkspaceId    -- ^ the focused window
+  | IPCClose                          -- ^ the focused window
+  | IPCToggleFloating
+  | IPCToggleFullscreen
+  | IPCFocusMaster
+  | IPCSwapMaster
+  | IPCShrink
+  | IPCExpand
+  | IPCIncMaster Int
+  | IPCFocusWindow WindowCriteria     -- ^ the next matching window (cycles on repeat)
+  | IPCCloseWindow WindowCriteria     -- ^ every matching window
+  | IPCMoveWindow WindowCriteria WorkspaceId  -- ^ every matching window
+  | IPCSpawn String                   -- ^ run a shell command
+  | IPCRun String                     -- ^ an action of 'ipcActions'
   deriving (Show, Eq)
+
+-- | Which windows an IPC request is about: every field given must match.
+data WindowCriteria = WindowCriteria
+  { wcAppId :: !(Maybe String)   -- ^ the app id, exactly
+  , wcTitle :: !(Maybe String)   -- ^ a part of the title
+  , wcId    :: !(Maybe String)   -- ^ river's identifier, as in the @"Windows"@ reply
+  } deriving (Show, Eq)
 
 -- | Things the main loop reacts to.
 data Input
@@ -268,6 +292,9 @@ data XConfig = XConfig
   , allowTearing       :: !Bool  -- ^ let fullscreen windows that ask for it (games) tear for lower latency
   , input              :: !InputConfig  -- ^ keyboard layout, key repeat, touchpad and mouse
   , shadows            :: !(Maybe ShadowConfig)  -- ^ drop shadows under windows; Nothing = none
+  , ipcActions         :: ![(String, X ())]
+    -- ^ actions scripts can run by name over IPC (@{"Action":{"Run":"name"}}@);
+    -- 'Rivermonad.Util.NamedActions.addDescrKeysP' adds every described key
   }
 
 ------------------------------------------------------------------------------

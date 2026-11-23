@@ -75,6 +75,7 @@ package_rivermonad-dotfiles() {
   arch=('any')
   depends=("rivermonad=$pkgver" 'waymobar>=0.3.0' 'bgmonad' 'hasklets' 'shotlet>=0.1.1'
            'locklet'                                               # lock screen, idle, Super+Shift+L
+           'polkit-gnome'                                          # password prompts for admin actions
            'foot' 'fuzzel' 'mako' 'kanshi' 'libnotify'
            'grim' 'slurp' 'swappy' 'wl-clipboard' 'wf-recorder'    # shot, screenrec
            'wtype' 'unicode-emoji'                                 # emoji

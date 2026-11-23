@@ -16,7 +16,7 @@ import qualified Control.Exception as E
 import Control.Monad (forM_, unless, when, void)
 import qualified Data.ByteString.Char8 as BC
 import Data.Char (digitToInt, isHexDigit)
-import Data.List (sortOn)
+import Data.List (isInfixOf, sortOn)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust)
 import Data.Monoid (Endo (..))
@@ -33,7 +33,8 @@ import System.IO (hPutStrLn, stderr)
 import Rivermonad.Core
 import Rivermonad.Input (currentKeyboardLayout, handleInputEvent, nextKeyboardLayout, setupKeymap)
 import qualified Rivermonad.JSON as J
-import Rivermonad.Layout (ChangeLayout (..), JumpToLayout (..))
+import Rivermonad.Actions.CycleWS (nextWS, prevWS, toggleWS)
+import Rivermonad.Layout (ChangeLayout (..), IncMasterN (..), JumpToLayout (..), Resize (..))
 import Rivermonad.Operations
 import Rivermonad.Shadows (drawShadows, dropShadow, handleShadowEvent, syncShadows)
 import qualified Rivermonad.StackSet as W
@@ -754,6 +755,48 @@ runIPCAction a = case a of
   IPCNextKeyboardLayout -> nextKeyboardLayout
   IPCLogout -> logoutGracefully
   IPCLogoutCheck n -> logoutTimedOut n
+  IPCNextWorkspace -> nextWS
+  IPCPrevWorkspace -> prevWS
+  IPCToggleWorkspace -> toggleWS
+  IPCMoveToWorkspace t -> windows (W.shift t)
+  IPCClose -> kill
+  IPCToggleFloating -> withFocused $ \w -> do
+    fl <- gets (M.member w . W.floating . windowset)
+    if fl then sinkWindow w else float w
+  IPCToggleFullscreen -> toggleFullscreen
+  IPCFocusMaster -> windows W.focusMaster
+  IPCSwapMaster -> windows W.swapMaster
+  IPCShrink -> sendMessage Shrink
+  IPCExpand -> sendMessage Expand
+  IPCIncMaster n -> sendMessage (IncMasterN n)
+  IPCFocusWindow c -> do
+    -- the first match after the focused window, in workspace order, so
+    -- repeating the request cycles through all of them
+    ms <- matchingWindows c
+    ws <- gets windowset
+    let order = concatMap (W.integrate' . W.stack) (W.workspaces ws)
+        after = drop 1 (dropWhile ((/= W.peek ws) . Just) order)
+    case filter (`elem` ms) after ++ filter (`elem` ms) order of
+      w : _ -> windows (W.focusWindow w)
+      [] -> pure ()
+  IPCCloseWindow c -> matchingWindows c >>= mapM_ killWindow
+  IPCMoveWindow c t -> matchingWindows c >>= mapM_ (\w -> windows (W.shiftWin t w))
+  IPCSpawn cmd -> spawn cmd
+  IPCRun n -> do
+    acts <- asks (ipcActions . config)
+    case lookup n acts of
+      Just act -> act
+      Nothing -> io (hPutStrLn stderr ("rivermonad: IPC: no action called " ++ show n))
+
+-- | The managed windows that match every field of the criteria.
+matchingWindows :: WindowCriteria -> X [Window]
+matchingWindows (WindowCriteria app tit ident) = do
+  ws <- gets windowset
+  infos <- gets windowInfo
+  let ok i = maybe True (== wiAppId i) app
+          && maybe True (`isInfixOf` wiTitle i) tit
+          && maybe True (== wiIdentifier i) ident
+  pure [ w | w <- W.allWindows ws, Just i <- [M.lookup w infos], ok i ]
 
 -- | Publish the state to IPC subscribers (they only get it when it changes).
 --
