@@ -56,15 +56,39 @@ are left out of the package: plain ghc finds the packaged libraries.
 
 ## Fedora
 
+The whole desktop, like `paru -S rivermonad-dotfiles` on Arch: one script
+builds the RPMs of every repository (their `packaging/fedora/*.spec`) in
+order and installs them.
+
+```sh
+packaging/fedora/build-desktop.sh             # --with-luna adds luna, --no-install only builds
+rivermonad-setup                              # as your user: copies the dotfiles to ~/.config
+ln -sfn /path/to/image ~/.config/wallpaper
+```
+
+It uses the checkouts next to this one (`../waymobar`, `../bgmonad`...)
+and clones the ones that are missing. The order is
+`material-symbols-rounded-fonts` (the bar's icon font, not in Fedora; its
+spec is here), waymobar, bgmonad, hasklets, shotlet, locklet and
+rivermonad. Like the PKGBUILD, `rivermonad.spec` builds
+**rivermonad-dotfiles** (`noarch`) too, which depends on all of them.
+
+hasklets takes longest: Fedora lacks some of the GTK 4 bindings it needs
+(gi-gtk4-layer-shell, gi-pangocairo...), so its spec builds them from
+Hackage as `ghc-*` subpackages.
+
+The window manager alone:
+
 ```sh
 sudo dnf install rpm-build rpmdevtools dnf-plugins-core
 sudo dnf builddep packaging/fedora/rivermonad.spec
 spectool -g -R packaging/fedora/rivermonad.spec
 rpmbuild -bb packaging/fedora/rivermonad.spec
-sudo dnf install ~/rpmbuild/RPMS/*/{,ghc-}rivermonad*-0.3.0-*.rpm
+sudo dnf install ~/rpmbuild/RPMS/*/{,ghc-}rivermonad{,-devel}-0.3.0-*.rpm
 ```
 
-The same spec builds in [COPR](https://copr.fedorainfracloud.org/).
+The specs build in [COPR](https://copr.fedorainfracloud.org/) too (luna's
+needs its vendored crates uploaded as a source).
 
 ## A new release
 

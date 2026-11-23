@@ -8,7 +8,7 @@
 
 Name:           %{pkg_name}
 Version:        0.3.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Xmonad-style tiling window manager for the river Wayland compositor
 
 License:        BSD-3-Clause
@@ -52,6 +52,7 @@ Recommends:     foot
 Recommends:     fuzzel
 Recommends:     kanshi
 Recommends:     libnotify
+Suggests:       rivermonad-dotfiles
 
 %description
 rivermonad brings xmonad's model (StackSet, layouts, manage hooks and a
@@ -61,6 +62,54 @@ river-window-management-v1 protocol, implemented in pure Haskell.
 
 This package also installs a "river + rivermonad" session for display
 managers.
+
+
+%package dotfiles
+Summary:        A complete river + rivermonad desktop
+BuildArch:      noarch
+Requires:       %{name} = %{version}-%{release}
+Requires:       waymobar >= 0.3.0
+Requires:       bgmonad
+Requires:       hasklets
+Requires:       shotlet >= 0.1.1
+# Lock screen, idle, Super+Shift+L.
+Requires:       locklet
+Requires:       foot
+Requires:       fuzzel
+Requires:       mako
+Requires:       kanshi
+Requires:       libnotify
+# shot, screenrec
+Requires:       grim
+Requires:       slurp
+Requires:       swappy
+Requires:       wl-clipboard
+Requires:       wf-recorder
+# emoji
+Requires:       wtype
+Requires:       unicode-emoji
+# Volume keys (wpctl).
+Requires:       wireplumber
+Requires:       xdg-desktop-portal-wlr
+Requires:       xdg-desktop-portal-gtk
+Requires:       rsms-inter-fonts
+Requires:       google-noto-color-emoji-fonts
+Requires:       material-symbols-rounded-fonts
+# Ubuntu Mono derivative Powerline, the font of foot.ini.
+Recommends:     powerline-fonts
+# Location for the weather (rivermonad.hs starts its demo agent).
+Recommends:     geoclue2
+# Dark GTK themes set by rivermonad-setup (gsettings).
+Recommends:     glib2
+# The browser on Super+B.
+Suggests:       firefox
+
+%description dotfiles
+The desktop of examples/dotfiles: the waymobar bar, the bgmonad living
+wallpaper, hasklets widgets, shotlet screenshots, locklet, notifications,
+a launcher and an emoji picker. A package does not write in your home, so
+the files are installed in %{_datadir}/%{name}/dotfiles: run
+rivermonad-setup as your user to copy them to ~/.config.
 
 
 %package -n ghc-%{name}
@@ -110,6 +159,9 @@ This package provides the Haskell %{name} profiling library.
 
 %prep
 %autosetup -n %{pkgver}
+# geoclue's demo agent is in libexec on Fedora.
+sed -i 's|/usr/lib/geoclue-2.0/demos/agent|%{_libexecdir}/geoclue-2.0/demos/agent|' \
+  examples/dotfiles/config/rivermonad/rivermonad.hs
 
 
 %build
@@ -124,6 +176,14 @@ install -Dpm 0755 contrib/session/init %{buildroot}%{_datadir}/%{name}/init
 mkdir -p %{buildroot}%{_datadir}/wayland-sessions
 sed 's|@BINDIR@|%{_bindir}|' contrib/session/rivermonad.desktop \
   > %{buildroot}%{_datadir}/wayland-sessions/%{name}.desktop
+
+# rivermonad-dotfiles. The build scripts compile against a source
+# checkout; with the packaged libraries plain ghc is used.
+mkdir -p %{buildroot}%{_datadir}/%{name}/dotfiles
+cp -pr examples/dotfiles/config examples/dotfiles/local \
+  %{buildroot}%{_datadir}/%{name}/dotfiles/
+rm %{buildroot}%{_datadir}/%{name}/dotfiles/config/{rivermonad,waymobar,bgmonad}/build
+install -Dpm 0755 examples/dotfiles/install.sh %{buildroot}%{_bindir}/rivermonad-setup
 
 
 %check
@@ -141,6 +201,13 @@ desktop-file-validate %{buildroot}%{_datadir}/wayland-sessions/%{name}.desktop
 %{_datadir}/%{name}/init
 %{_datadir}/%{pkgver}/
 %{_datadir}/wayland-sessions/%{name}.desktop
+
+
+%files dotfiles
+%license LICENSE
+%doc examples/dotfiles/README.md
+%{_bindir}/rivermonad-setup
+%{_datadir}/%{name}/dotfiles/
 
 
 %files -n ghc-%{name} -f ghc-%{name}.files
@@ -162,6 +229,9 @@ desktop-file-validate %{buildroot}%{_datadir}/wayland-sessions/%{name}.desktop
 
 
 %changelog
+* Mon Nov 23 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.3.0-2
+- rivermonad-dotfiles subpackage, as in the Arch PKGBUILD
+
 * Sun Nov 22 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.3.0-1
 - 25 new contrib modules: WindowGo, WindowBringer, Navigation2D, Minimize,
   CopyWindow, SpawnOn, UpdatePointer, MostRecentlyUsed, Submap, RefocusLast,

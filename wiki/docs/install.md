@@ -52,10 +52,23 @@ reminds you of the command.
 
 ## Fedora ≥ 44
 
-Build the RPMs from `packaging/fedora/rivermonad.spec` (Fedora 43 still has
-river 0.3). Like other Haskell packages it is split in two: `rivermonad`
-(the binary and the session) requires `ghc-rivermonad-devel` (the library).
-See [packaging/README.md](https://github.com/prietus/rivermonad/blob/main/packaging/README.md).
+Every repository has its spec in `packaging/fedora/` (Fedora 43 still has
+river 0.3). For the complete desktop, one script builds the RPMs in order
+(waymobar, bgmonad, hasklets, shotlet, locklet, rivermonad and
+rivermonad-dotfiles) and installs them, cloning the repositories that are
+not next to the rivermonad checkout:
+
+```sh
+git clone https://github.com/prietus/rivermonad
+rivermonad/packaging/fedora/build-desktop.sh   # --with-luna adds luna
+rivermonad-setup                               # as your user, like on Arch
+ln -sfn /path/to/image ~/.config/wallpaper
+```
+
+hasklets takes a while: its spec also builds the GTK 4 bindings Fedora
+does not have. Like other Haskell packages, rivermonad is split in two:
+`rivermonad` (the binary and the session) requires `ghc-rivermonad-devel`
+(the library). See [packaging/README.md](https://github.com/prietus/rivermonad/blob/main/packaging/README.md).
 
 ## From source
 
