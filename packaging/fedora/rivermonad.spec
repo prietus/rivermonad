@@ -7,8 +7,8 @@
 %{?haskell_setup}
 
 Name:           %{pkg_name}
-Version:        0.3.0
-Release:        2%{?dist}
+Version:        0.4.0
+Release:        1%{?dist}
 Summary:        Xmonad-style tiling window manager for the river Wayland compositor
 
 License:        BSD-3-Clause
@@ -74,6 +74,7 @@ Requires:       hasklets
 Requires:       shotlet >= 0.1.1
 # Lock screen, idle, Super+Shift+L.
 Requires:       locklet
+Requires:       polkit-gnome
 Requires:       foot
 Requires:       fuzzel
 Requires:       mako
@@ -229,6 +230,12 @@ desktop-file-validate %{buildroot}%{_datadir}/wayland-sessions/%{name}.desktop
 
 
 %changelog
+* Mon Nov 23 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.4.0-1
+- IPC: workspaces, the focused window, layout messages, windows by app id,
+  title or identifier, Spawn, and named actions (ipcActions, "Actions")
+- addDescrKeysP registers every described key as an IPC action
+- rivermonad-dotfiles starts a polkit agent (polkit-gnome)
+
 * Mon Nov 23 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.3.0-2
 - rivermonad-dotfiles subpackage, as in the Arch PKGBUILD
 
