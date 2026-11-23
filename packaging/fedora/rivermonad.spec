@@ -7,7 +7,7 @@
 %{?haskell_setup}
 
 Name:           %{pkg_name}
-Version:        0.4.2
+Version:        0.4.3
 Release:        1%{?dist}
 Summary:        Xmonad-style tiling window manager for the river Wayland compositor
 
@@ -68,7 +68,7 @@ managers.
 Summary:        A complete river + rivermonad desktop
 BuildArch:      noarch
 Requires:       %{name} = %{version}-%{release}
-Requires:       waymobar >= 0.4.0
+Requires:       waymobar >= 0.5.0
 Requires:       bgmonad
 Requires:       hasklets
 Requires:       shotlet >= 0.1.1
@@ -233,6 +233,11 @@ desktop-file-validate %{buildroot}%{_datadir}/wayland-sessions/%{name}.desktop
 
 
 %changelog
+* Mon Nov 23 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.4.3-1
+- IPC: the state lists every window (for task bars); FocusWindow brings a
+  minimised window to the current workspace
+- rivermonad-dotfiles: waymobar 0.5.0's task bar
+
 * Mon Nov 23 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.4.2-1
 - rivermonad-dotfiles: clipboard history (cliphist, Super+C) and a night
   light (gammastep located by GeoClue, Super+Shift+N)

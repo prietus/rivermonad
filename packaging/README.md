@@ -84,7 +84,7 @@ sudo dnf install rpm-build rpmdevtools dnf-plugins-core
 sudo dnf builddep packaging/fedora/rivermonad.spec
 spectool -g -R packaging/fedora/rivermonad.spec
 rpmbuild -bb packaging/fedora/rivermonad.spec
-sudo dnf install ~/rpmbuild/RPMS/*/{,ghc-}rivermonad{,-devel}-0.4.2-*.rpm
+sudo dnf install ~/rpmbuild/RPMS/*/{,ghc-}rivermonad{,-devel}-0.4.3-*.rpm
 ```
 
 The specs build in [COPR](https://copr.fedorainfracloud.org/) too (luna's
@@ -94,6 +94,6 @@ needs its vendored crates uploaded as a source).
 
 1. Bump `version:` in `rivermonad.cabal`, `pkgver` in the PKGBUILD and
    `Version:` in the spec (plus a `%changelog` entry).
-2. Tag it: `git tag -a v0.4.2 -m "rivermonad 0.4.2" && git push --tags`.
+2. Tag it: `git tag -a v0.4.3 -m "rivermonad 0.4.3" && git push --tags`.
 3. Update `sha256sums` in the PKGBUILD with `updpkgsums` (it is `SKIP`
    until the tag exists).

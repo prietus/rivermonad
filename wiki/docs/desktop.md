@@ -13,7 +13,7 @@ ready configuration ([Installation](install.md#arch-linux)).
 configured in Haskell, with rivermonad widgets built in (workspaces,
 layout, window title) read from the [IPC socket](ipc.md): pills, popovers,
 a Wi-Fi menu, the weather, media, a tray, a calendar, a side panel, hot
-corners, mako's notifications (with "do not disturb" and the recent ones)
+corners, a task bar, mako's notifications (with "do not disturb" and the recent ones)
 and an on-screen display for volume, brightness and keyboard layout.
 
 ```haskell

@@ -51,6 +51,7 @@ the state changes (and the current state at once):
 | `focused_output` | the focused output's connector name |
 | `title`, `app_id` | of the focused window, or `null` |
 | `keyboard_layout` | the active xkb layout's name |
+| `windows[]` | every window, workspace by workspace in stack order: `id`, `app_id`, `title`, `workspace`, `focused`, `floating`, `hidden` (minimised or a waiting scratchpad); for task bars |
 
 ### `{"Action": A}`
 
@@ -84,7 +85,7 @@ identifier, as in the `"Windows"` reply); all the ones given must match.
 
 | A | |
 |---|---|
-| `{"FocusWindow":{"app_id":"firefox"}}` | focus the next matching window, going to its workspace; repeat to cycle |
+| `{"FocusWindow":{"app_id":"firefox"}}` | focus the next matching window, going to its workspace (a minimised one comes to the current workspace instead); repeat to cycle |
 | `{"CloseWindow":{"title":"Picture-in-Picture"}}` | close every matching window |
 | `{"MoveWindow":{"app_id":"mpv","workspace":"9"}}` | move every matching window to a workspace |
 

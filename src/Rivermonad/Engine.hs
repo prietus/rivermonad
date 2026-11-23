@@ -776,8 +776,13 @@ runIPCAction a = case a of
     ws <- gets windowset
     let order = concatMap (W.integrate' . W.stack) (W.workspaces ws)
         after = drop 1 (dropWhile ((/= W.peek ws) . Just) order)
+    tags <- asks (workspaces . config)
     case filter (`elem` ms) after ++ filter (`elem` ms) order of
-      w : _ -> windows (W.focusWindow w)
+      -- one waiting on a hidden workspace (minimised, a scratchpad) is
+      -- brought to this one, instead of showing that workspace
+      w : _ | Just t <- W.findTag w ws, t `notElem` tags ->
+                windows (\s -> W.focusWindow w (W.shiftWin (W.currentTag s) w s))
+            | otherwise -> windows (W.focusWindow w)
       [] -> pure ()
   IPCCloseWindow c -> matchingWindows c >>= mapM_ killWindow
   IPCMoveWindow c t -> matchingWindows c >>= mapM_ (\w -> windows (W.shiftWin t w))
@@ -803,7 +808,9 @@ matchingWindows (WindowCriteria app tit ident) = do
 -- @{"State":{"workspaces":[...],"focused_output":...,"title":...,"app_id":...}}@
 -- Each workspace: name, idx (1-based, configuration order first), output
 -- (connector name or null), focused, visible, windows, layout, extra (not
--- in the configured workspaces, e.g. the scratchpad one).
+-- in the configured workspaces, e.g. the scratchpad one). "windows" lists
+-- every window: id, app_id, title, workspace, focused, floating, hidden
+-- (on a workspace outside the configured ones: minimised, a scratchpad).
 publishState :: X ()
 publishState = do
   ws <- gets windowset
@@ -830,8 +837,23 @@ publishState = do
           , ("layout", J.str (description (W.layout w)))
           , ("extra", J.JBool (t `notElem` tags)) ]
       focusedInfo = W.peek ws >>= \w -> M.lookup w infos
+      -- every window, workspace by workspace in their order, each in its
+      -- stack order (for task bars)
+      winJsonAll t w = do
+        i <- M.lookup w infos
+        pure $ J.obj
+          [ ("id", J.str (wiIdentifier i))
+          , ("app_id", J.str (wiAppId i))
+          , ("title", J.str (wiTitle i))
+          , ("workspace", J.str t)
+          , ("focused", J.JBool (have && W.peek ws == Just w))
+          , ("floating", J.JBool (M.member w (W.floating ws)))
+          , ("hidden", J.JBool (t `notElem` tags)) ]
+      allWins = [ j | t <- ordered, Just wsp <- [M.lookup t byTag]
+                    , w <- W.integrate' (W.stack wsp), Just j <- [winJsonAll t w] ]
       state = J.obj [ ("State", J.obj
         [ ("workspaces", J.JArr [ j | (i, t) <- zip [1 ..] ordered, Just j <- [wsJson i t] ])
+        , ("windows", J.JArr allWins)
         , ("focused_output", maybe J.JNull J.str (if have then outName (W.screenDetail (W.current ws)) else Nothing))
         , ("title", maybe J.JNull (J.str . wiTitle) focusedInfo)
         , ("app_id", maybe J.JNull (J.str . wiAppId) focusedInfo)

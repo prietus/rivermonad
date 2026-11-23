@@ -71,7 +71,8 @@ main = waymobar def
       , inClickablePill (layoutName layoutLabel)
       , inPill hiddenWindows
       ]
-  , center = [ inPill (colored subtext (windowTitle 80)) ]
+    -- the open windows of this workspace (and the minimised ones)
+  , center = [ myTaskbar ]
   , right =
       [ inClickablePill media
       , inClickablePill myNetwork
@@ -331,3 +332,21 @@ myOsd = defaultOsd
   , osdBrightnessLabel = \p -> sym "brightness_6" ++ "Brightness  " ++ num (show p ++ "%")
   , osdLayoutLabel = \l -> sym "keyboard" ++ escape l
   }
+
+-- The task bar: each window a small pill with its icon and title, the
+-- focused one lit like the focused workspace, minimised ones dimmed. Click
+-- focuses, middle click closes, right click: move it or close it.
+myTaskbar :: Widget
+myTaskbar = taskbar defaultTaskbar
+  { tbLabel = \w -> "<span foreground='" ++ (if winFocused w then text' else if winHidden w then overlay0 else subtext) ++ "'>"
+                    ++ escape (shorten 22 (winTitle w)) ++ "</span>"
+  , tbFocusedStyle = tbPill { styleBg = Just surface1 }
+  , tbNormalStyle  = tbPill { styleHover = Just noStyle { styleBg = Just surface0 } }
+  , tbHiddenStyle  = tbPill { styleFg = Just overlay0, styleHover = Just noStyle { styleBg = Just surface0 } }
+  , tbIconSize = 16
+  , tbPadding = 10
+  }
+  & groupStyle pill { stylePadding = Just 3 }   -- one big pill around them
+  where
+    tbPill = noStyle { styleRadius = Just 11, styleMargin = Just (3, 1) }
+    w & f = f w
