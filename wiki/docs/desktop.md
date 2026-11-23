@@ -12,8 +12,9 @@ ready configuration ([Installation](install.md#arch-linux)).
 [waymobar](https://github.com/prietus/waymobar) is a native bar written and
 configured in Haskell, with rivermonad widgets built in (workspaces,
 layout, window title) read from the [IPC socket](ipc.md): pills, popovers,
-a Wi-Fi menu, the weather, media, a tray, a calendar, a side panel and hot
-corners.
+a Wi-Fi menu, the weather, media, a tray, a calendar, a side panel, hot
+corners, mako's notifications (with "do not disturb" and the recent ones)
+and an on-screen display for volume, brightness and keyboard layout.
 
 ```haskell
   , startupHook = spawnOnce "waymobar"
@@ -74,6 +75,16 @@ are (the IPC request `"Windows"`).
 
 [locklet](https://github.com/prietus/locklet) locks the screen over the
 blurred bgmonad wallpaper and locks on its own after a while without input.
+
+## A polkit agent
+
+Applications that need administrator rights (Disks, date and time, package
+installers) ask for your password through a polkit agent; without one they
+fail without saying why. The dotfiles start `polkit-gnome`:
+
+```haskell
+      spawnOnce "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
+```
 
 ## Everything else
 

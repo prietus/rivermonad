@@ -59,6 +59,8 @@ main = waymobar def
   , menuHighlight = surface0
   , widgetSpacing = 6
   , edgePadding = 0
+    -- volume, brightness and keyboard layout changes, for a moment
+  , osd = Just myOsd
     -- hot corners: rest the pointer in the corner a moment
   , hotCorners =
       [ (TopLeftCorner, spawn "fuzzel")        -- the launcher
@@ -75,6 +77,7 @@ main = waymobar def
       , inClickablePill myNetwork
       , inClickablePill myWeather
       , inClickablePill myVolume
+      , inClickablePill myNotifications
       , inPill (cpu (\p -> sym "memory" ++ warn 80 p (num (show p ++ "%"))))
       , inPill (memory (\p -> sym "memory_alt" ++ warn 85 p (num (show p ++ "%"))))
       , inPill (battery (\p st -> sym (batteryIcon p st)
@@ -305,3 +308,26 @@ hiddenWindows = Widget $ \env -> pure $ \_ -> do
   mst <- rivermonadState env
   let n = sum [ wsWindows w | Just st <- [mst], w <- rsWorkspaces st, wsName w == "hidden" ]
   pure [ block (sym "visibility_off" ++ num (show n)) | n > 0 ]
+
+-- Notifications from mako: a bell (crossed out in "do not disturb") and how
+-- many arrived since you last looked. A click lists the recent ones (and
+-- "do not disturb"); the right button switches "do not disturb".
+myNotifications :: Widget
+myNotifications = notifications defaultNotifications
+  { notifLabel = \st ->
+      (if nsDnd st then sym1 "notifications_off" else sym1 "notifications")
+        ++ (if nsUnseen st > 0
+              then "  <span foreground='" ++ mauve ++ "'><b>" ++ num (show (nsUnseen st)) ++ "</b></span>"
+              else "")
+  }
+
+-- The on-screen display, with the bar's icons and colours.
+myOsd :: OsdConfig
+myOsd = defaultOsd
+  { osdBarColor = mauve
+  , osdVolumeLabel = \muted p ->
+      if muted then sym "volume_off" ++ "Muted"
+      else sym (if p < 50 then "volume_down" else "volume_up") ++ "Volume  " ++ num (show p ++ "%")
+  , osdBrightnessLabel = \p -> sym "brightness_6" ++ "Brightness  " ++ num (show p ++ "%")
+  , osdLayoutLabel = \l -> sym "keyboard" ++ escape l
+  }

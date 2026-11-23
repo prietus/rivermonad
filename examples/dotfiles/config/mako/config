@@ -15,3 +15,8 @@ anchor=top-right
 [urgency=critical]
 border-color=#f38ba8
 default-timeout=0
+
+# "Do not disturb" (waymobar's bell, or makoctl mode -t do-not-disturb):
+# notifications are not shown but still go to the history.
+[mode=do-not-disturb]
+invisible=1
