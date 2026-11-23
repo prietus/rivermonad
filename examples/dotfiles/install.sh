@@ -24,6 +24,7 @@ config/kanshi/config
 config/mako/config
 config/fuzzel/fuzzel.ini
 config/foot/foot.ini
+config/gammastep/config.ini
 config/xdg-desktop-portal/river-portals.conf
 config/xdg-desktop-portal-wlr/config
 config/waybar/config.jsonc

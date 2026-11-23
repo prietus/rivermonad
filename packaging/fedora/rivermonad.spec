@@ -7,7 +7,7 @@
 %{?haskell_setup}
 
 Name:           %{pkg_name}
-Version:        0.4.1
+Version:        0.4.2
 Release:        1%{?dist}
 Summary:        Xmonad-style tiling window manager for the river Wayland compositor
 
@@ -75,6 +75,9 @@ Requires:       shotlet >= 0.1.1
 # Lock screen, idle, Super+Shift+L.
 Requires:       locklet
 Requires:       polkit-gnome
+Requires:       cliphist
+Requires:       gammastep
+Requires:       geoclue2
 Requires:       foot
 Requires:       fuzzel
 Requires:       mako
@@ -230,6 +233,10 @@ desktop-file-validate %{buildroot}%{_datadir}/wayland-sessions/%{name}.desktop
 
 
 %changelog
+* Mon Nov 23 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.4.2-1
+- rivermonad-dotfiles: clipboard history (cliphist, Super+C) and a night
+  light (gammastep located by GeoClue, Super+Shift+N)
+
 * Mon Nov 23 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.4.1-1
 - rivermonad-dotfiles: waymobar 0.4.0's notifications widget and on-screen
   display; mako's "do not disturb" mode

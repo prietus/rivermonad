@@ -77,6 +77,11 @@ myConfig = def
       -- and bgmonad picks it up by itself. The plain, still alternative:
       --   spawnOnce "swaybg -m fill -i ~/.config/wallpaper"
       spawnOnce "bgmonad"
+      -- clipboard history (M-c picks an entry), and the night light: warmer
+      -- colours after sunset, where GeoClue says you are
+      -- (~/.config/gammastep/config.ini; M-S-n switches it off and on)
+      spawnOnce "wl-paste --watch cliphist store"
+      spawnOnce "gammastep"
       -- asks for your password when an application needs administrator rights
       -- (Disks, date and time, package installers...); without an agent they fail
       spawnOnce "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
@@ -178,6 +183,9 @@ myKeys =
   , ("M-S-s",       "Screenshot toolbar (shotlet)",         spawn "shotlet")
   , ("M-S-l",       "Lock the screen",                      spawn "locklet")
   , ("M-i",         "Emoji picker",                         spawn "emoji")
+  , ("M-c",         "Clipboard history (fuzzel)",           spawn clipboardMenu)
+  , ("M-C-c",       "Clear the clipboard history",          spawn "cliphist wipe && notify-send -a Clipboard 'Clipboard history cleared'")
+  , ("M-S-n",       "Night light off / on",                 spawn "pkill -USR1 -x gammastep")
   ] ++ concat
     -- screenshots (~/Pictures/Screenshots + clipboard), see ~/.local/bin/shot.
     -- Print Screen through macOS/UTM (Fn+P on a Drop ALT) arrives as F13,
@@ -202,3 +210,8 @@ resizeMode = modeP myConfig
   , ("<Left>", sendMessage Shrink), ("<Right>", sendMessage Expand)
   , ("r", sendMessage Rotate), ("s", sendMessage Swap)
   ]
+
+-- | Pick an earlier clipboard entry in fuzzel; it becomes the clipboard
+-- again, ready to paste.
+clipboardMenu :: String
+clipboardMenu = "cliphist list | fuzzel --dmenu --prompt 'clipboard › ' --width 60 | cliphist decode | wl-copy"

@@ -24,6 +24,7 @@ mirrors the home directory: `config/` is `~/.config/`, `local/bin/` is
 | `config/mako/config` | notifications |
 | `config/fuzzel/fuzzel.ini` | Spotlight-style launcher (also used by the emoji picker) |
 | `config/foot/foot.ini` | terminal: font, zoom keys, Catppuccin Mocha colours (Nord ones commented out) |
+| `config/gammastep/config.ini` | night light: warmer colours after sunset, located by GeoClue |
 | `config/xdg-desktop-portal/river-portals.conf` | portals: screen sharing via wlr, the rest via GTK |
 | `config/xdg-desktop-portal-wlr/config` | how screen sharing picks the screen (slurp) |
 | `config/waybar/` | the alternative bar, if you use waybar with the rivermonad modules |
@@ -110,6 +111,8 @@ you pick). The main ones:
 | `Super+B` | Firefox: focus it, or start it |
 | `Super+G`, `Super+Shift+G` | go to a window / bring it here, picked in fuzzel |
 | `Super+I` | emoji picker |
+| `Super+C`, `Super+Ctrl+C` | clipboard history in fuzzel (the entry picked is copied again), clear it |
+| `Super+Shift+N` | night light off / on |
 | `Super+J` / `Super+K`, `Super+Enter` | focus next / previous, swap with master |
 | `Super+Ctrl+arrows`, `Super+Ctrl+Shift+arrows` | focus / swap with the window beside it on screen |
 | `Alt+Tab`, `Super+Ctrl+W` | previous window anywhere, every window by recent use |

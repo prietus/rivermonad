@@ -86,6 +86,16 @@ fail without saying why. The dotfiles start `polkit-gnome`:
       spawnOnce "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 ```
 
+## Clipboard history and night light
+
+The dotfiles keep a clipboard history with
+[cliphist](https://github.com/sentriz/cliphist) (`Super+C` picks an earlier
+entry in fuzzel and copies it again) and warm the colours after sunset with
+[gammastep](https://gitlab.com/chinstrap/gammastep), located by GeoClue
+(`Super+Shift+N` switches it off and on). river supports the protocols
+both need; the night light needs an output that supports gamma, which real
+hardware does and virtio-gpu virtual machines do not.
+
 ## Everything else
 
 Anything that works on wlroots compositors works: fuzzel (launcher), mako
