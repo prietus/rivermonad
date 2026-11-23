@@ -71,6 +71,14 @@ are (the IPC request `"Windows"`).
   , ("M-S-s", spawn "shotlet")
 ```
 
+## spacelet, the overview
+
+[spacelet](https://github.com/prietus/spacelet) shows the workspaces side by
+side with live thumbnails of their windows, also those on hidden
+workspaces (river can capture any window): click a window to go to it,
+drag it onto another workspace to move it, type to find it. `Super+A` in
+the dotfiles.
+
 ## locklet, the lock screen
 
 [locklet](https://github.com/prietus/locklet) locks the screen over the

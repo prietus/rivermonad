@@ -195,6 +195,13 @@ Python file (GTK 4, grim, wf-recorder); window mode asks rivermonad where
 the windows are with the IPC request `"Windows"`. Bind a key to it,
 `("M-S-s", spawn "shotlet")`. It lives in its own repository.
 
+### Workspaces overview
+
+**[spacelet](https://github.com/prietus/spacelet)** shows the workspaces
+side by side with live thumbnails of their windows, like GNOME's
+Activities: click a window to go to it, drag it onto another workspace,
+type to find one. It lives in its own repository.
+
 ## Installation
 
 Arch Linux and Fedora (≥ 44): build the package from
@@ -220,14 +227,15 @@ install them in this order:
 4. [shotlet](https://aur.archlinux.org/packages/shotlet), the screenshot
    and recording toolbar
 5. [locklet](https://aur.archlinux.org/packages/locklet), the lock screen
-6. [rivermonad](https://aur.archlinux.org/packages/rivermonad) and
+6. [spacelet](https://aur.archlinux.org/packages/spacelet), the overview of the workspaces
+7. [rivermonad](https://aur.archlinux.org/packages/rivermonad) and
    [rivermonad-dotfiles](https://aur.archlinux.org/packages/rivermonad-dotfiles),
    which are built together from the same PKGBUILD
 
 By hand:
 
 ```sh
-for p in waymobar bgmonad hasklets shotlet locklet rivermonad; do
+for p in waymobar bgmonad hasklets shotlet locklet spacelet rivermonad; do
   git clone https://aur.archlinux.org/$p.git
   (cd $p && makepkg -si)
 done

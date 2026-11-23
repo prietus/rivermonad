@@ -143,6 +143,7 @@ isFirefox = appId =? "firefox_firefox" <||> appId =? "firefox"
 myKeys :: [(String, String, X ())]
 myKeys =
   [ ("M-b",         "Firefox: focus it, or start it",       runOrRaise "firefox" isFirefox)
+  , ("M-a",         "Overview of the workspaces (spacelet)", spawn "spacelet")
   , ("M-g",         "Go to a window (fuzzel)",              gotoMenu)
   , ("M-S-g",       "Bring a window here (fuzzel)",         bringMenu)
   , ("M-z",         "Full screen without borders (toggle)", sendMessage ToggleLayout)

@@ -109,6 +109,7 @@ you pick). The main ones:
 | `Super+Shift+Enter` | terminal |
 | `Super+P` | launcher (apps open on the workspace it was opened on) |
 | `Super+B` | Firefox: focus it, or start it |
+| `Super+A` | overview of the workspaces with live thumbnails ([spacelet](https://github.com/prietus/spacelet)) |
 | `Super+G`, `Super+Shift+G` | go to a window / bring it here, picked in fuzzel |
 | `Super+I` | emoji picker |
 | `Super+C`, `Super+Ctrl+C` | clipboard history in fuzzel (the entry picked is copied again), clear it |

@@ -38,6 +38,7 @@ bgmonad:bgmonad
 hasklets:hasklets
 shotlet:shotlet
 locklet:locklet
+spacelet:spacelet
 rivermonad:rivermonad
 '
 [ "$luna" = yes ] && specs="$specs luna:luna"

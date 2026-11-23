@@ -17,12 +17,13 @@ this order:
    (the first build compiles the GTK bindings and takes a while)
 4. [shotlet](https://aur.archlinux.org/packages/shotlet), the screenshot and recording toolbar
 5. [locklet](https://aur.archlinux.org/packages/locklet), the lock screen
-6. [rivermonad](https://aur.archlinux.org/packages/rivermonad) and
+6. [spacelet](https://aur.archlinux.org/packages/spacelet), the overview of the workspaces
+7. [rivermonad](https://aur.archlinux.org/packages/rivermonad) and
    [rivermonad-dotfiles](https://aur.archlinux.org/packages/rivermonad-dotfiles),
    built together from the same PKGBUILD
 
 ```sh
-for p in waymobar bgmonad hasklets shotlet locklet rivermonad; do
+for p in waymobar bgmonad hasklets shotlet locklet spacelet rivermonad; do
   git clone https://aur.archlinux.org/$p.git
   (cd $p && makepkg -si)
 done
