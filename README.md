@@ -181,7 +181,7 @@ a media player, disks and the top processes, on the desktop above the
 wallpaper and below the windows. Start them from the `startupHook`
 (`spawnOnce "hasklets"`). They live in their own repository.
 
-![hasklets on a rivermonad desktop: weather, CPU, memory and network, media player, disks and processes next to a floating terminal, under waymobar and over the bgmonad wallpaper](docs/hasklets.png)
+![hasklets on a rivermonad desktop: weather with the week ahead, the journal, processes, disks, CPU, memory and network, and the media player, under waymobar and over the bgmonad wallpaper](docs/hasklets.png)
 
 *hasklets, waymobar and bgmonad on a rivermonad desktop.*
 
