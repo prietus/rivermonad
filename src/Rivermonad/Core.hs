@@ -164,7 +164,7 @@ data WindowInfo = WindowInfo
   , wiGeom       :: !(Maybe Rectangle)  -- ^ last placement, borders included
   , wiAsync      :: !Bool               -- ^ the window prefers tearing (async presentation)
   , wiPid        :: !(Maybe Int)        -- ^ pid of the process that made it (unreliable: may be reused)
-  , wiFxSent     :: !(Maybe (Word32, Int, Word32)) -- ^ last opacity, corner radius and blur sent (river-fx)
+  , wiFxSent     :: !(Maybe (Word32, Int, Word32, Bool)) -- ^ last opacity, corner radius, blur and shadow sent (river-fx)
   } deriving (Show)
 
 emptyWindowInfo :: ObjectId -> WindowInfo
@@ -217,6 +217,7 @@ data Globals = Globals
   , gCompositor   :: !(Maybe ObjectId)  -- ^ wl_compositor (surfaces for decorations)
   , gShm          :: !(Maybe ObjectId)  -- ^ wl_shm (their buffers)
   , gFx         :: !(Maybe ObjectId)  -- ^ river_fx_v1: only on river-fx (river drawn with SceneFX)
+  , gFxVersion  :: !Int               -- ^ version of river_fx_v1 bound (2: shadows, close fade)
   }
 
 -- | Thrown to unwind the main loop so the new binary can be exec'd.
@@ -337,8 +338,9 @@ data AnimationConfig = AnimationConfig
   , animWorkspaces :: !Bool  -- ^ changing workspace slides the old one out and the new one in
   , animOpen       :: !Int   -- ^ a new window rises this many pixels into place (0 = it just appears)
   , animFade       :: !Bool
-    -- ^ windows fade in when they appear and workspaces fade as they slide.
-    -- Needs river-fx (opacity); on plain river nothing fades
+    -- ^ windows fade in when they appear and out when they close, and
+    -- workspaces fade as they slide. Needs river-fx (opacity); on plain
+    -- river nothing fades
   }
 
 instance Default AnimationConfig where
@@ -435,7 +437,9 @@ data KeymapState
 ------------------------------------------------------------------------------
 -- Shadows
 
--- | Drop shadows, drawn by rivermonad as river decorations below windows.
+-- | Drop shadows. On plain river rivermonad draws them itself, as river
+-- decorations below windows; on river-fx the compositor draws them, and
+-- they follow the rounded corners of 'effects'.
 data ShadowConfig = ShadowConfig
   { shadowRadius  :: !Int          -- ^ blur radius in pixels
   , shadowOffset  :: !(Int, Int)   -- ^ (x, y); (0, 4) puts the light above

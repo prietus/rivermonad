@@ -26,7 +26,8 @@
   <description summary="visual effects for windows">
     This protocol lets the window manager ask the compositor for visual
     effects on windows that river-window-management-v1 has no way to express:
-    opacity, rounded corners and blur. It is an extension of river (river-fx, river
+    opacity, rounded corners, blur, shadows and a fade when a window closes.
+    It is an extension of river (river-fx, river
     drawn with SceneFX) and is not part of upstream river: a window manager
     must work without it and use it only if the global is advertised.
 
@@ -36,14 +37,14 @@
     together with positions, borders and the rest of the rendering state.
   </description>
 
-  <interface name="river_fx_v1" version="1">
+  <interface name="river_fx_v1" version="2">
     <description summary="window effects global">
       This global should only be advertised to the window manager process.
 
       The state set for a window is reset to its defaults (fully opaque,
       square corners) when the window manager's river_window_v1 object for
       that window is destroyed, for example because the window manager exits.
-      The same defaults apply to blur: none.
+      The same defaults apply to the rest: no blur, no shadow, no fade.
     </description>
 
     <request name="destroy" type="destructor">
@@ -114,6 +115,54 @@
       </description>
       <arg name="window" type="object" interface="river_window_v1"/>
       <arg name="strength" type="uint" summary="0 (none) to 0xffffffff (full)"/>
+    </request>
+
+    <request name="set_shadow" since="2">
+      <description summary="draw a shadow under a window">
+        Draw a shadow under the window: a blurred shape of the window with
+        its borders, with the same rounded corners, moved by the offset and
+        spreading radius pixels beyond it. The shadow is not drawn under the
+        window itself, so it does not show through translucent windows.
+
+        The colour is given like the one of river_window_v1.set_borders:
+        32-bit components, premultiplied by the alpha. An alpha of 0 (the
+        default) removes the shadow.
+
+        There is no shadow while the window is fullscreen or clipped with
+        river_window_v1.set_clip_box.
+
+        This request modifies rendering state and may only be made as part of
+        a manage or render sequence, see the river_window_manager_v1
+        description.
+      </description>
+      <arg name="window" type="object" interface="river_window_v1"/>
+      <arg name="radius" type="uint" summary="how far the shadow spreads, in logical pixels"/>
+      <arg name="x" type="int" summary="horizontal offset"/>
+      <arg name="y" type="int" summary="vertical offset"/>
+      <arg name="r" type="uint"/>
+      <arg name="g" type="uint"/>
+      <arg name="b" type="uint"/>
+      <arg name="a" type="uint"/>
+    </request>
+
+    <request name="set_close_fade" since="2">
+      <description summary="fade a window out when it closes">
+        When the window closes while it is shown, keep drawing its last
+        content where it was and fade it out over this many milliseconds,
+        starting from the opacity it had. 0 (the default) makes it disappear
+        at once.
+
+        The window manager cannot do this itself: once a window is closed
+        its river_window_v1 object is inert. The fading content is not part
+        of any window any more: it takes no input, and its borders, shadow
+        and blur are gone at once.
+
+        This request modifies rendering state and may only be made as part of
+        a manage or render sequence, see the river_window_manager_v1
+        description.
+      </description>
+      <arg name="window" type="object" interface="river_window_v1"/>
+      <arg name="duration" type="uint" summary="milliseconds"/>
     </request>
   </interface>
 </protocol>

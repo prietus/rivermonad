@@ -6,6 +6,8 @@ module Rivermonad.Shadows
   , drawShadows
   , dropShadow
   , handleShadowEvent
+  , shadowWanted
+  , shadowRgb
   ) where
 
 import Control.Monad (forM_, unless, when)
@@ -32,6 +34,8 @@ syncShadows = do
   g <- asks globals
   cur <- gets shadowMap
   case (mcfg, gCompositor g, gShm g) of
+    -- on river-fx the compositor draws the shadows (see sendFx)
+    _ | Just _ <- gFx g, gFxVersion g >= 2 -> mapM_ dropShadow (M.keys cur)
     (Just sc, Just comp, Just _) -> do
       ws <- gets windowset
       infos <- gets windowInfo
@@ -53,6 +57,18 @@ syncShadows = do
           pure (Shadow surf deco Nothing Nothing)
         modify $ \s -> s { shadowMap = M.insert w sh (shadowMap s) }
     _ -> mapM_ dropShadow (M.keys cur)
+
+-- | Whether a window should have a shadow now: floating ones, or all with
+-- 'shadowTiled'; never fullscreen ones.
+shadowWanted :: ShadowConfig -> Window -> X Bool
+shadowWanted sc w = do
+  ws <- gets windowset
+  fs <- gets fullscreen
+  pure ((shadowTiled sc || M.member w (W.floating ws)) && not (S.member w fs))
+
+-- | The colour of the shadows, components 0..1.
+shadowRgb :: ShadowConfig -> (Double, Double, Double)
+shadowRgb = rgb . shadowColor
 
 -- | Render sequence: (re)draw the shadows whose window changed size, in
 -- sync with the frame that shows the new size.

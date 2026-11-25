@@ -148,7 +148,7 @@ runWM cfg = do
   let g = Globals { gRegistry = registry, gWm = wm, gWmVersion = fromIntegral wmv, gXkb = xkb, gLayerShell = fst <$> mls
                   , gInputManager = fst <$> mim, gXkbConfig = fst <$> mxc, gLibinput = fst <$> mli
                   , gCompositor = fst <$> mcomp, gShm = fst <$> mshm
-                  , gFx = fst <$> mfx }
+                  , gFx = fst <$> mfx, gFxVersion = maybe 0 (fromIntegral . snd) mfx }
       xconf = XConf { config = cfg, conn = c, globals = g, inputs = ch
                     , ipcPublish = maybe (const (pure ())) publishIPC ipcSrv
                     , ipcPublishWindows = maybe (const (pure ())) publishWindowsIPC ipcSrv }

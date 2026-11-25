@@ -39,7 +39,7 @@ import qualified Rivermonad.JSON as J
 import Rivermonad.Actions.CycleWS (nextWS, prevWS, toggleWS)
 import Rivermonad.Layout (ChangeLayout (..), IncMasterN (..), JumpToLayout (..), Resize (..))
 import Rivermonad.Operations
-import Rivermonad.Shadows (drawShadows, dropShadow, handleShadowEvent, syncShadows)
+import Rivermonad.Shadows (drawShadows, dropShadow, handleShadowEvent, shadowRgb, shadowWanted, syncShadows)
 import qualified Rivermonad.StackSet as W
 import Rivermonad.Wayland.Protocol
 import Rivermonad.Wayland.Wire
@@ -741,16 +741,33 @@ sendFx w = do
         -- a fullscreen window is opaque: nothing shows behind it anyway
         op = if isFs then 1 else max 0 (min 1 (base * factor))
         word x = round (max 0 (min 1 x) * 4294967295) :: Word32
-        want = (word op, maybe 0 (max 0 . fxCornerRadius) ec, maybe 0 (word . fxBlur) ec)
+    v2 <- asks ((>= 2) . gFxVersion . globals)
+    shadow <- if v2 then maybe (pure False) (`shadowWanted` w) (shadows cfg) else pure False
+    let want = (word op, maybe 0 (max 0 . fxCornerRadius) ec, maybe 0 (word . fxBlur) ec, shadow)
     sent <- gets (\s -> M.lookup w (windowInfo s) >>= wiFxSent)
     when (sent /= Just want) $ do
       c <- asks conn
-      let (o, r, b) = want
-          (so, sr, sb) = fromMaybe (maxBound, 0, 0) sent
+      let (o, r, b, sh) = want
+          (so, sr, sb, ssh) = fromMaybe (maxBound, 0, 0, False) sent
+          new = sent == Nothing
       io $ do
-        when (o /= so || sent == Nothing) (riverFxV1SetOpacity c fxo w o)
-        when (r /= sr || sent == Nothing) (riverFxV1SetCornerRadius c fxo w (fi r))
-        when (b /= sb || sent == Nothing) (riverFxV1SetBlur c fxo w b)
+        when (o /= so || new) (riverFxV1SetOpacity c fxo w o)
+        when (r /= sr || new) (riverFxV1SetCornerRadius c fxo w (fi r))
+        when (b /= sb || new) (riverFxV1SetBlur c fxo w b)
+        when (sh /= ssh) $ case shadows cfg of
+          Just sc | sh -> do
+            -- premultiplied, like border colours
+            let (cr, cg, cb) = shadowRgb sc
+                a = max 0 (min 1 (shadowOpacity sc))
+                (dx, dy) = shadowOffset sc
+            riverFxV1SetShadow c fxo w (fi (max 0 (shadowRadius sc))) (fi dx) (fi dy)
+              (word (cr * a)) (word (cg * a)) (word (cb * a)) (word a)
+          _ -> riverFxV1SetShadow c fxo w 0 0 0 0 0 0 0
+        -- a window that closes fades out: river-fx does it, the window is
+        -- out of our hands by then
+        when (new && v2) $ case animations cfg of
+          Just ac | animFade ac -> riverFxV1SetCloseFade c fxo w (fi (max 0 (animDuration ac)))
+          _ -> pure ()
       modifyInfo w (\i -> i { wiFxSent = Just want })
 
 -- | A window that is hidden now: it has no position to slide from later.
