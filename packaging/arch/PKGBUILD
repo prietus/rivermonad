@@ -16,8 +16,7 @@ optdepends=('foot: the default terminal'
             'kanshi: monitor resolution and scale, started by the session'
             'libnotify: notifications when the configuration fails to compile')
 source=("$pkgbase-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-# Filled in once v0.5.0 is tagged: sha256sum of the GitHub tarball.
-sha256sums=('SKIP')
+sha256sums=('3611211ac0cf76fe1d6ac37b04268839e83c1a3279015b5911e6ba43b2fbc2b4')
 
 build() {
   cd $pkgbase-$pkgver
