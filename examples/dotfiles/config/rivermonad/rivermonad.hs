@@ -61,6 +61,10 @@ myConfig = def
   , manageHook         = manageSpawn <> myManageHook
     -- windows slide to their place and workspaces slide in and out
   , animations         = Just def { animDuration = 200 }
+    -- rounded corners, slightly translucent inactive windows and blur.
+    -- Only on river-fx (https://github.com/prietus/river-fx); on plain
+    -- river they do nothing
+  , effects            = Just def { fxCornerRadius = 12, fxInactiveOpacity = 0.92, fxBlur = 1 }
   , logHook            = do
       workspaceHistoryHook
       mostRecentlyUsedHook

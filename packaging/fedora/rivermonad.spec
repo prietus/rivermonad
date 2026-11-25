@@ -7,7 +7,7 @@
 %{?haskell_setup}
 
 Name:           %{pkg_name}
-Version:        0.5.0
+Version:        0.6.0
 Release:        1%{?dist}
 Summary:        Xmonad-style tiling window manager for the river Wayland compositor
 
@@ -234,6 +234,12 @@ desktop-file-validate %{buildroot}%{_datadir}/wayland-sessions/%{name}.desktop
 
 
 %changelog
+* Thu Nov 26 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.6.0-1
+- Effects on river-fx (river drawn with SceneFX): rounded corners,
+  translucent windows and blur (effects = Just def), shadows drawn by the
+  compositor, and fades when windows appear, close and change workspace.
+  Nothing changes on plain river
+
 * Wed Nov 25 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.5.0-1
 - Animations: windows slide to their place when the layout changes and
   workspaces slide in and out (animations = Just def)

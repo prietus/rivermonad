@@ -70,8 +70,12 @@ the stable `river-window-management-v1` protocol. Because of this split:
                        , shadowColor = "#000000", shadowOpacity = 0.5 }
   ```
 * animations: windows slide to their new place when the layout changes
-  and workspaces slide in and out (`animations = Just def`); positions
-  only, river's protocol has no opacity or scaling
+  and workspaces slide in and out (`animations = Just def`)
+* on [river-fx](https://github.com/prietus/river-fx), river drawn with
+  SceneFX: rounded corners, translucent windows and blur
+  (`effects = Just def`), shadows that follow the corners, and fades when
+  windows appear, close and change workspace. On plain river none of it
+  applies and everything else works the same
 * layer-shell (waybar, fuzzel, …), with the space taken by bars excluded
 * `~/.config/rivermonad/rivermonad.hs` recompiled with ghc; `mod-q`
   recompiles and restarts while keeping each window's workspace, stack
