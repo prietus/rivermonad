@@ -39,6 +39,7 @@ defaultConfig = XConfig
   , allowTearing = True
   , input = def
   , shadows = Nothing
+  , effects = Nothing
   , animations = Nothing
   , ipcActions = []
   }

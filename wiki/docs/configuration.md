@@ -80,6 +80,7 @@ exec env -u XDG_CACHE_HOME -u XDG_CONFIG_HOME cabal -v0 exec -- \
 | `input` | system defaults | keyboard, touchpad and mouse, see [Input devices](input.md) |
 | `shadows` | `Nothing` | drop shadows under windows, see below |
 | `animations` | `Nothing` | windows and workspaces slide instead of jumping, see below |
+| `effects` | `Nothing` | rounded corners, translucent windows and blur; they need river-fx, see below |
 | `ipcActions` | `[]` | actions scripts can run by name over the [IPC socket](ipc.md#named-actions-actions-and-run-name) |
 
 ## Keys
@@ -163,11 +164,35 @@ name is on in the list.
 | `animFps` | `60` | frames per second while something moves |
 | `animWorkspaces` | `True` | slide workspaces in and out |
 | `animOpen` | `0` | a new window rises this many pixels into place (0: it just appears) |
+| `animFade` | `True` | windows fade in when they appear and workspaces fade as they slide (river-fx only) |
 
-Only positions are animated. river's protocol gives the window manager no
-opacity or scaling, so there are no fades or zooms, and a window takes its
-new size at once while it slides. A window you drag with the mouse follows
+On plain river only positions are animated: its protocol gives the window
+manager no opacity or scaling. On river-fx (see below) windows also fade.
+There are no zooms, and a window takes its new size at once while it
+slides. A window you drag with the mouse follows
 the pointer without delay. Nothing runs while nothing moves.
+
+## Effects (river-fx)
+
+Rounded corners, translucent windows and blur are drawn by the compositor,
+and plain river cannot draw them. **river-fx** is river built on
+[SceneFX](https://github.com/wlrfx/scenefx), with one more protocol,
+`river-fx-v1`, through which the window manager asks for them. rivermonad
+uses it when the compositor offers it; on plain river these settings do
+nothing and everything else works the same.
+
+```haskell
+  , effects = Just def { fxCornerRadius = 12, fxInactiveOpacity = 0.9, fxBlur = 1 }
+```
+
+| Field | Default | |
+|---|---|---|
+| `fxCornerRadius` | `10` | rounded corners of windows and their borders, in pixels (0: square) |
+| `fxActiveOpacity` | `1` | opacity of the focused window, 0 to 1 |
+| `fxInactiveOpacity` | `1` | opacity of the other windows |
+| `fxBlur` | `0` | blur what shows through windows, 0 (none) to 1; it costs GPU time, leave it at 0 if nothing is translucent |
+
+Fullscreen windows are always opaque and square.
 
 ## Tearing for games
 

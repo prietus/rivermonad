@@ -21,6 +21,7 @@ module Rivermonad.Core
   , InputDev (..), XkbKb (..), LiDev (..), KeymapState (..)
   , ShadowConfig (..), Shadow (..)
   , AnimationConfig (..), Anim (..)
+  , EffectsConfig (..)
     -- * The X monad
   , X, XConf (..), XState (..), RationalRectS, runX, io, catchX, userCode, userCodeDef
   , withWindowSet, gets, modify, asks, ask, get, put
@@ -163,6 +164,7 @@ data WindowInfo = WindowInfo
   , wiGeom       :: !(Maybe Rectangle)  -- ^ last placement, borders included
   , wiAsync      :: !Bool               -- ^ the window prefers tearing (async presentation)
   , wiPid        :: !(Maybe Int)        -- ^ pid of the process that made it (unreliable: may be reused)
+  , wiFxSent     :: !(Maybe (Word32, Int, Word32)) -- ^ last opacity, corner radius and blur sent (river-fx)
   } deriving (Show)
 
 emptyWindowInfo :: ObjectId -> WindowInfo
@@ -170,7 +172,7 @@ emptyWindowInfo node = WindowInfo
   { wiNode = node, wiAppId = "", wiTitle = "", wiIdentifier = "", wiParent = Nothing
   , wiMinSize = (0, 0), wiMaxSize = (0, 0), wiDims = Nothing, wiDecoration = 3
   , wiManaged = False, wiProposed = Nothing, wiTiled = Nothing, wiFullscreen = Nothing
-  , wiDecoSent = Nothing, wiGeom = Nothing, wiAsync = False, wiPid = Nothing }
+  , wiDecoSent = Nothing, wiGeom = Nothing, wiAsync = False, wiPid = Nothing, wiFxSent = Nothing }
 
 data OutputInfo = OutputInfo
   { oiPos        :: !(Maybe (Int, Int))
@@ -214,6 +216,7 @@ data Globals = Globals
   , gLibinput     :: !(Maybe ObjectId)  -- ^ river_libinput_config_v1
   , gCompositor   :: !(Maybe ObjectId)  -- ^ wl_compositor (surfaces for decorations)
   , gShm          :: !(Maybe ObjectId)  -- ^ wl_shm (their buffers)
+  , gFx         :: !(Maybe ObjectId)  -- ^ river_fx_v1: only on river-fx (river drawn with SceneFX)
   }
 
 -- | Thrown to unwind the main loop so the new binary can be exec'd.
@@ -293,6 +296,9 @@ data XConfig = XConfig
   , allowTearing       :: !Bool  -- ^ let fullscreen windows that ask for it (games) tear for lower latency
   , input              :: !InputConfig  -- ^ keyboard layout, key repeat, touchpad and mouse
   , shadows            :: !(Maybe ShadowConfig)  -- ^ drop shadows under windows; Nothing = none
+  , effects            :: !(Maybe EffectsConfig)
+    -- ^ rounded corners and translucent windows; they need river-fx and
+    -- are ignored on plain river. Nothing = none
   , animations         :: !(Maybe AnimationConfig)
     -- ^ windows slide to their place instead of jumping; Nothing = none
   , ipcActions         :: ![(String, X ())]
@@ -301,21 +307,42 @@ data XConfig = XConfig
   }
 
 ------------------------------------------------------------------------------
+-- Effects
+
+-- | Effects drawn by the compositor, through the river-fx-v1 protocol.
+-- Only river-fx (river with SceneFX) has it; on plain river these settings
+-- do nothing.
+data EffectsConfig = EffectsConfig
+  { fxCornerRadius    :: !Int     -- ^ rounded corners of windows, in pixels (0 = square)
+  , fxActiveOpacity   :: !Double  -- ^ opacity of the focused window, 0..1
+  , fxInactiveOpacity :: !Double  -- ^ opacity of the other windows, 0..1
+  , fxBlur            :: !Double
+    -- ^ blur what shows through windows, 0 (none) to 1. It costs GPU time:
+    -- leave it at 0 if no window is translucent
+  }
+
+instance Default EffectsConfig where
+  def = EffectsConfig 10 1 1 0
+
+------------------------------------------------------------------------------
 -- Animations
 
 -- | Windows slide to their new place when the layout changes, and
--- workspaces slide in and out sideways. Only positions are animated: the
--- protocol has no opacity or scaling, so there are no fades, and a window
--- takes its new size at once.
+-- workspaces slide in and out sideways. On plain river only positions are
+-- animated; on river-fx windows also fade. A window takes its new size at
+-- once: the protocol has no scaling.
 data AnimationConfig = AnimationConfig
   { animDuration   :: !Int   -- ^ milliseconds a movement takes
   , animFps        :: !Int   -- ^ frames per second while something moves
   , animWorkspaces :: !Bool  -- ^ changing workspace slides the old one out and the new one in
   , animOpen       :: !Int   -- ^ a new window rises this many pixels into place (0 = it just appears)
+  , animFade       :: !Bool
+    -- ^ windows fade in when they appear and workspaces fade as they slide.
+    -- Needs river-fx (opacity); on plain river nothing fades
   }
 
 instance Default AnimationConfig where
-  def = AnimationConfig 200 60 True 0
+  def = AnimationConfig 200 60 True 0 True
 
 -- | A window moving from one position to another.
 data Anim = Anim
@@ -325,6 +352,7 @@ data Anim = Anim
   , anStarted :: !Bool               -- ^ its first frame was drawn: until then the clock waits
   , anLeaving :: !Bool               -- ^ its workspace is sliding out: hidden when it arrives
   , anClip    :: !(Maybe Rectangle)  -- ^ kept inside this screen while it moves
+  , anFade    :: !Int                -- ^ 1 fades in as it goes, -1 fades out, 0 neither
   }
 
 ------------------------------------------------------------------------------

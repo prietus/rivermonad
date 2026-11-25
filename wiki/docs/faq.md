@@ -60,10 +60,12 @@ content is shown in SDR.
 
 rivermonad animates positions: windows slide when the layout changes and
 workspaces slide in and out ([`animations`](configuration.md#animations)).
-Fades, zooms, blur and rounded corners need the compositor: river's
-protocol lets the window manager place, clip and decorate windows, but not
-change their opacity, scale them or filter what is behind them, and river
-has no plugins.
+Fades, blur and rounded corners need the compositor: river's protocol lets
+the window manager place, clip and decorate windows, but not change their
+opacity or filter what is behind them, and river has no plugins. They are
+available on river-fx, river built on SceneFX
+([`effects`](configuration.md#effects-river-fx)); rivermonad uses them when
+the compositor offers them.
 
 ## Hot corners
 

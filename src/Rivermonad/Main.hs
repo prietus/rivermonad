@@ -129,6 +129,7 @@ runWM cfg = do
   mli <- bindG riverLibinputConfigV1Interface riverLibinputConfigV1Version
   mcomp <- bindG wlCompositorInterface wlCompositorVersion
   mshm <- bindG wlShmInterface wlShmVersion
+  mfx <- bindG riverFxV1Interface riverFxV1Version
   (wm, wmv) <- maybe (die' "river_window_manager_v1 not advertised: is this river >= 0.4?") pure mwm
   (xkb, _) <- maybe (die' "river_xkb_bindings_v1 not advertised") pure mxkb
   flush c
@@ -146,7 +147,8 @@ runWM cfg = do
   forM_ ipcSrv $ \srv -> publishActionsIPC srv (map fst (ipcActions cfg))
   let g = Globals { gRegistry = registry, gWm = wm, gWmVersion = fromIntegral wmv, gXkb = xkb, gLayerShell = fst <$> mls
                   , gInputManager = fst <$> mim, gXkbConfig = fst <$> mxc, gLibinput = fst <$> mli
-                  , gCompositor = fst <$> mcomp, gShm = fst <$> mshm }
+                  , gCompositor = fst <$> mcomp, gShm = fst <$> mshm
+                  , gFx = fst <$> mfx }
       xconf = XConf { config = cfg, conn = c, globals = g, inputs = ch
                     , ipcPublish = maybe (const (pure ())) publishIPC ipcSrv
                     , ipcPublishWindows = maybe (const (pure ())) publishWindowsIPC ipcSrv }

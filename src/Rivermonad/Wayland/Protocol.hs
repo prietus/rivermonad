@@ -2144,3 +2144,29 @@ decodeRiverLibinputResultV1Event 1 = Just (pure (RiverLibinputResultV1Unsupporte
 decodeRiverLibinputResultV1Event 2 = Just (pure (RiverLibinputResultV1Invalid, []))
 decodeRiverLibinputResultV1Event _ = Nothing
 
+-- * river_fx_v1 (version 1)
+
+riverFxV1Interface :: ByteString
+riverFxV1Interface = "river_fx_v1"
+
+riverFxV1Version :: Word32
+riverFxV1Version = 1
+
+-- | river_fx_v1.destroy (opcode 0)
+riverFxV1Destroy :: Conn -> ObjectId -> IO ()
+riverFxV1Destroy c self = do
+  sendRequest c self 0 (mempty)
+  forgetObject c self
+
+-- | river_fx_v1.set_opacity (opcode 1)
+riverFxV1SetOpacity :: Conn -> ObjectId -> ObjectId -> Word32 -> IO ()
+riverFxV1SetOpacity c self a0 a1 = sendRequest c self 1 (putObj a0 <> putUint a1)
+
+-- | river_fx_v1.set_corner_radius (opcode 2)
+riverFxV1SetCornerRadius :: Conn -> ObjectId -> ObjectId -> Word32 -> IO ()
+riverFxV1SetCornerRadius c self a0 a1 = sendRequest c self 2 (putObj a0 <> putUint a1)
+
+-- | river_fx_v1.set_blur (opcode 3)
+riverFxV1SetBlur :: Conn -> ObjectId -> ObjectId -> Word32 -> IO ()
+riverFxV1SetBlur c self a0 a1 = sendRequest c self 3 (putObj a0 <> putUint a1)
+

@@ -536,10 +536,12 @@ applyManage = do
               riverWindowV1SetBorders c w (if bw > 0 then 15 else 0) (fi (max 0 bw)) r' g' b' a'
               riverWindowV1Show c w
             modifyInfo w (const i' { wiGeom = if isJust fsOut then wiGeom i else Just r })
+            sendFx w
 
     -- Workspaces that changed on a screen slide: the new one in from the
     -- side its name is on in the list, the old one out the other way.
     anim <- asks (animations . config)
+    canFade <- asks (isJust . gFx . globals)
     prevTags <- gets shownTags
     let tags = workspaces cfg
         slideOf scr = do
@@ -563,7 +565,8 @@ applyManage = do
           wsp = W.workspace scr
           enter = case (slideOf scr, anim) of
             (Just (_, dx), _) -> Just ((dx, 0), Just (sdRect sd))
-            (Nothing, Just ac) | animOpen ac > 0 -> Just ((0, animOpen ac), Nothing)
+            -- a window that appears: it rises into place, or just fades in
+            (Nothing, Just ac) | animOpen ac > 0 || (animFade ac && canFade) -> Just ((0, animOpen ac), Nothing)
             _ -> Nothing
           allW = W.integrate' (W.stack wsp)
           floats = [ (w, fromRationalRect (sdRect sd) rr) | w <- allW, Just rr <- [M.lookup w flt] ]
@@ -657,14 +660,20 @@ animatedPos enter w target = do
       now <- io getMonotonicTime
       ma <- gets (M.lookup w . anims)
       shown <- gets (M.lookup w . shownPos)
-      let fresh from clip = if from == target then Nothing else Just (Anim from target now False False clip)
+      fades <- asks (isJust . gFx . globals)
+      let fade = if animFade ac && fades then 1 else 0
+          moving from clip = if from == target then Nothing else Just (Anim from target now False False clip 0)
+          -- a window new on the screen fades in, even if it does not move
+          entering from clip
+            | from == target && fade == 0 = Nothing
+            | otherwise = Just (Anim from target now False False clip fade)
           a' = case ma of
             Just a | anTo a == target, not (anLeaving a) -> Just a
             -- it was going somewhere else (or leaving): turn round from where it is
-            Just a -> fresh (animAt ac now a) (anClip a)
+            Just a -> moving (animAt ac now a) (anClip a)
             Nothing -> case (shown, enter) of
-              (Just p, _) -> fresh p Nothing
-              (Nothing, Just ((dx, dy), clip)) -> fresh (fst target + dx, snd target + dy) clip
+              (Just p, _) -> moving p Nothing
+              (Nothing, Just ((dx, dy), clip)) -> entering (fst target + dx, snd target + dy) clip
               (Nothing, Nothing) -> Nothing
       case a' of
         Just a | animProgress ac now a < 1 -> do
@@ -696,7 +705,8 @@ slideOut start w = do
   let a' = case (ma, start, shown) of
         (Just a, _, _) | anLeaving a -> Just a
         -- it starts leaving from where it is drawn now
-        (_, Just ((dx, dy), clip), Just (x, y)) -> Just (Anim (x, y) (x + dx, y + dy) now False True (Just clip))
+        (_, Just ((dx, dy), clip), Just (x, y)) ->
+          Just (Anim (x, y) (x + dx, y + dy) now False True (Just clip) (if maybe False animFade mac then -1 else 0))
         _ -> Nothing
   case (mac, a', minfo) of
     (Just ac, Just a, Just i) | animProgress ac now a < 1 -> do
@@ -705,8 +715,43 @@ slideOut start w = do
       io (riverNodeV1SetPosition c (wiNode i) (fi (fst p)) (fi (snd p)))
       modify $ \s -> s { anims = M.insert w a (anims s), shownPos = M.insert w p (shownPos s) }
       clipTo (anClip a) w p
+      sendFx w
       pure True
     _ -> pure False
+
+-- | Tell river-fx how to draw a window, if it changed: its opacity (the
+-- configured one, times how far a fade has got), its corner radius and the
+-- blur behind it. Nothing on plain river.
+sendFx :: Window -> X ()
+sendFx w = do
+  fx <- asks (gFx . globals)
+  cfg <- asks config
+  forM_ fx $ \fxo -> do
+    focused <- gets (W.peek . windowset)
+    isFs <- gets (S.member w . fullscreen)
+    ma <- gets (M.lookup w . anims)
+    now <- io getMonotonicTime
+    let ec = effects cfg
+        base = maybe 1 (\e -> if Just w == focused then fxActiveOpacity e else fxInactiveOpacity e) ec
+        eased a ac = let t = animProgress ac now a in 1 - (1 - t) ^ (3 :: Int)
+        factor = case (ma, animations cfg) of
+          (Just a, Just ac) | anFade a > 0 -> eased a ac
+                            | anFade a < 0 -> 1 - eased a ac
+          _ -> 1
+        -- a fullscreen window is opaque: nothing shows behind it anyway
+        op = if isFs then 1 else max 0 (min 1 (base * factor))
+        word x = round (max 0 (min 1 x) * 4294967295) :: Word32
+        want = (word op, maybe 0 (max 0 . fxCornerRadius) ec, maybe 0 (word . fxBlur) ec)
+    sent <- gets (\s -> M.lookup w (windowInfo s) >>= wiFxSent)
+    when (sent /= Just want) $ do
+      c <- asks conn
+      let (o, r, b) = want
+          (so, sr, sb) = fromMaybe (maxBound, 0, 0) sent
+      io $ do
+        when (o /= so || sent == Nothing) (riverFxV1SetOpacity c fxo w o)
+        when (r /= sr || sent == Nothing) (riverFxV1SetCornerRadius c fxo w (fi r))
+        when (b /= sb || sent == Nothing) (riverFxV1SetBlur c fxo w b)
+      modifyInfo w (\i -> i { wiFxSent = Just want })
 
 -- | A window that is hidden now: it has no position to slide from later.
 forgetPos :: Window -> X ()

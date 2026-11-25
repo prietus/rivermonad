@@ -10,4 +10,5 @@ python3 tools/gen-protocol.py \
   protocol/river-input-management-v1.xml \
   protocol/river-xkb-config-v1.xml \
   protocol/river-libinput-config-v1.xml \
+  protocol/river-fx-v1.xml \
   > src/Rivermonad/Wayland/Protocol.hs
