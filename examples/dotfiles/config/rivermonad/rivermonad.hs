@@ -59,6 +59,8 @@ myConfig = def
   , workspaces         = ["web", "code", "term"] ++ map show [4 .. 9 :: Int]
   , layoutHook         = myLayout
   , manageHook         = manageSpawn <> myManageHook
+    -- windows slide to their place and workspaces slide in and out
+  , animations         = Just def { animDuration = 200 }
   , logHook            = do
       workspaceHistoryHook
       mostRecentlyUsedHook

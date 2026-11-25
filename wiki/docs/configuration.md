@@ -79,6 +79,7 @@ exec env -u XDG_CACHE_HOME -u XDG_CONFIG_HOME cabal -v0 exec -- \
 | `allowTearing` | `True` | fullscreen windows that ask for it (games) present without vsync |
 | `input` | system defaults | keyboard, touchpad and mouse, see [Input devices](input.md) |
 | `shadows` | `Nothing` | drop shadows under windows, see below |
+| `animations` | `Nothing` | windows and workspaces slide instead of jumping, see below |
 | `ipcActions` | `[]` | actions scripts can run by name over the [IPC socket](ipc.md#named-actions-actions-and-run-name) |
 
 ## Keys
@@ -144,6 +145,29 @@ they darken their neighbours), and never in full screen:
   , shadows = Just def { shadowRadius = 18, shadowOffset = (0, 5)
                        , shadowColor = "#000000", shadowOpacity = 0.5 }
 ```
+
+## Animations
+
+Windows slide to their new place when the layout changes (a window opens
+or closes, the master area grows, you swap two windows), and changing
+workspace slides the old one out and the new one in, from the side its
+name is on in the list.
+
+```haskell
+  , animations = Just def { animDuration = 200 }   -- milliseconds
+```
+
+| Field | Default | |
+|---|---|---|
+| `animDuration` | `200` | milliseconds a movement takes |
+| `animFps` | `60` | frames per second while something moves |
+| `animWorkspaces` | `True` | slide workspaces in and out |
+| `animOpen` | `0` | a new window rises this many pixels into place (0: it just appears) |
+
+Only positions are animated. river's protocol gives the window manager no
+opacity or scaling, so there are no fades or zooms, and a window takes its
+new size at once while it slides. A window you drag with the mouse follows
+the pointer without delay. Nothing runs while nothing moves.
 
 ## Tearing for games
 

@@ -20,6 +20,7 @@ module Rivermonad.Core
   , InputConfig (..), KeyboardConfig (..), PointerConfig (..), AccelProfile (..)
   , InputDev (..), XkbKb (..), LiDev (..), KeymapState (..)
   , ShadowConfig (..), Shadow (..)
+  , AnimationConfig (..), Anim (..)
     -- * The X monad
   , X, XConf (..), XState (..), RationalRectS, runX, io, catchX, userCode, userCodeDef
   , withWindowSet, gets, modify, asks, ask, get, put
@@ -292,9 +293,38 @@ data XConfig = XConfig
   , allowTearing       :: !Bool  -- ^ let fullscreen windows that ask for it (games) tear for lower latency
   , input              :: !InputConfig  -- ^ keyboard layout, key repeat, touchpad and mouse
   , shadows            :: !(Maybe ShadowConfig)  -- ^ drop shadows under windows; Nothing = none
+  , animations         :: !(Maybe AnimationConfig)
+    -- ^ windows slide to their place instead of jumping; Nothing = none
   , ipcActions         :: ![(String, X ())]
     -- ^ actions scripts can run by name over IPC (@{"Action":{"Run":"name"}}@);
     -- 'Rivermonad.Util.NamedActions.addDescrKeysP' adds every described key
+  }
+
+------------------------------------------------------------------------------
+-- Animations
+
+-- | Windows slide to their new place when the layout changes, and
+-- workspaces slide in and out sideways. Only positions are animated: the
+-- protocol has no opacity or scaling, so there are no fades, and a window
+-- takes its new size at once.
+data AnimationConfig = AnimationConfig
+  { animDuration   :: !Int   -- ^ milliseconds a movement takes
+  , animFps        :: !Int   -- ^ frames per second while something moves
+  , animWorkspaces :: !Bool  -- ^ changing workspace slides the old one out and the new one in
+  , animOpen       :: !Int   -- ^ a new window rises this many pixels into place (0 = it just appears)
+  }
+
+instance Default AnimationConfig where
+  def = AnimationConfig 200 60 True 0
+
+-- | A window moving from one position to another.
+data Anim = Anim
+  { anFrom    :: !(Int, Int)
+  , anTo      :: !(Int, Int)
+  , anStart   :: !Double             -- ^ monotonic seconds
+  , anStarted :: !Bool               -- ^ its first frame was drawn: until then the clock waits
+  , anLeaving :: !Bool               -- ^ its workspace is sliding out: hidden when it arrives
+  , anClip    :: !(Maybe Rectangle)  -- ^ kept inside this screen while it moves
   }
 
 ------------------------------------------------------------------------------
@@ -424,6 +454,10 @@ data XState = XState
   , fullscreen      :: !(S.Set Window)
   , needsCenter     :: !(S.Set Window)  -- ^ floats to center once their size is known
   , shownWindows    :: !(S.Set Window)  -- ^ on screen after the last layout (not hidden by it)
+  , anims           :: !(M.Map Window Anim)        -- ^ windows on their way somewhere
+  , shownPos        :: !(M.Map Window (Int, Int))  -- ^ where each shown window was last drawn
+  , shownTags       :: !(M.Map ObjectId WorkspaceId) -- ^ the workspace last shown on each output
+  , animTick        :: !Bool                       -- ^ the next animation frame is already scheduled
   , drag            :: !(Maybe Drag)
   , sessionLocked   :: !Bool
   , started         :: !Bool            -- ^ startup hook already ran

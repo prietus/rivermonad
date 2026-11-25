@@ -56,6 +56,15 @@ river creates the color-management protocol, so applications can describe
 HDR content, but it does not switch outputs into HDR mode: on river 0.5
 content is shown in SDR.
 
+## Animations, blur, rounded corners
+
+rivermonad animates positions: windows slide when the layout changes and
+workspaces slide in and out ([`animations`](configuration.md#animations)).
+Fades, zooms, blur and rounded corners need the compositor: river's
+protocol lets the window manager place, clip and decorate windows, but not
+change their opacity, scale them or filter what is behind them, and river
+has no plugins.
+
 ## Hot corners
 
 The window manager only learns where the pointer is when windows change,

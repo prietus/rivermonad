@@ -12,11 +12,13 @@ module Rivermonad.Engine
   , applyRestoredLayouts
   ) where
 
+import Control.Concurrent (forkIO, threadDelay)
+import Control.Concurrent.Chan (writeChan)
 import qualified Control.Exception as E
 import Control.Monad (forM_, unless, when, void)
 import qualified Data.ByteString.Char8 as BC
 import Data.Char (digitToInt, isHexDigit)
-import Data.List (isInfixOf, sortOn)
+import Data.List (elemIndex, isInfixOf, sortOn)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust)
 import Data.Monoid (Endo (..))
@@ -24,6 +26,7 @@ import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Word (Word32)
+import GHC.Clock (getMonotonicTime)
 import System.Directory (removeFile)
 import System.Environment (lookupEnv)
 import System.Exit (exitFailure, exitSuccess)
@@ -223,6 +226,8 @@ windowClosed w = do
     , windowset = W.delete w (windowset s)
     , fullscreen = S.delete w (fullscreen s)
     , needsCenter = S.delete w (needsCenter s)
+    , anims = M.delete w (anims s)
+    , shownPos = M.delete w (shownPos s)
     , newWindows = filter (/= w) (newWindows s)
     , seats = M.map (\si -> si { siPointerWindow = if siPointerWindow si == Just w then Nothing else siPointerWindow si
                                , siFocused = if siFocused si == Just (Just w) then Nothing else siFocused si })
@@ -494,7 +499,7 @@ applyManage = do
         normalC = parseColor (normalBorderColor cfg)
         focusC = parseColor (focusedBorderColor cfg)
 
-        place sd w r tiled = do
+        place enter sd w r tiled = do
           minfo <- gets (M.lookup w . windowInfo)
           override <- gets (M.lookup w . borderWidths)
           let bw = fromMaybe (borderWidth cfg) override
@@ -522,8 +527,9 @@ applyManage = do
                   io (riverWindowV1ProposeDimensions c w (fi (fst size)) (fi (snd size)))
                 when (wiTiled i /= Just edges) $
                   io (riverWindowV1SetTiled c w (fi edges))
-                unless (S.member w centre && not tiled) $
-                  io (riverNodeV1SetPosition c (wiNode i) (fi (rx + bw)) (fi (ry + bw)))
+                unless (S.member w centre && not tiled) $ do
+                  (px, py) <- animatedPos enter w (rx + bw, ry + bw)
+                  io (riverNodeV1SetPosition c (wiNode i) (fi px) (fi py))
                 pure i { wiFullscreen = Nothing, wiProposed = Just size, wiTiled = Just edges }
             let (r', g', b', a') = if Just w == focused then focusC else normalC
             io $ do
@@ -531,9 +537,34 @@ applyManage = do
               riverWindowV1Show c w
             modifyInfo w (const i' { wiGeom = if isJust fsOut then wiGeom i else Just r })
 
+    -- Workspaces that changed on a screen slide: the new one in from the
+    -- side its name is on in the list, the old one out the other way.
+    anim <- asks (animations . config)
+    prevTags <- gets shownTags
+    let tags = workspaces cfg
+        slideOf scr = do
+          ac <- anim
+          pt <- M.lookup (sdOutput (W.screenDetail scr)) prevTags
+          let t = W.tag (W.workspace scr)
+          i <- elemIndex pt tags
+          j <- elemIndex t tags
+          if animWorkspaces ac && i /= j
+            then Just (pt, (if j > i then 1 else -1) * rect_width (sdRect (W.screenDetail scr)))
+            else Nothing
+        -- window -> (how far it goes, the screen it leaves)
+        leaving = M.fromList
+          [ (w, ((negate dx, 0), sdRect (W.screenDetail scr)))
+          | scr <- W.screens ws, Just (pt, dx) <- [slideOf scr]
+          , wsp <- W.hidden ws, W.tag wsp == pt, w <- W.integrate' (W.stack wsp) ]
+    modify $ \s -> s { shownTags = M.fromList [ (sdOutput (W.screenDetail scr), W.tag (W.workspace scr)) | scr <- W.screens ws ] }
+
     visibleWins <- fmap concat $ mapM (\scr -> do
       let sd = W.screenDetail scr
           wsp = W.workspace scr
+          enter = case (slideOf scr, anim) of
+            (Just (_, dx), _) -> Just ((dx, 0), Just (sdRect sd))
+            (Nothing, Just ac) | animOpen ac > 0 -> Just ((0, animOpen ac), Nothing)
+            _ -> Nothing
           allW = W.integrate' (W.stack wsp)
           floats = [ (w, fromRationalRect (sdRect sd) rr) | w <- allW, Just rr <- [M.lookup w flt] ]
           tiledWs = wsp { W.stack = W.stack wsp >>= W.filter (`M.notMember` flt) }
@@ -542,8 +573,8 @@ applyManage = do
       let
           -- Tiled windows the layout chose not to show (e.g. under Full) are hidden.
           shownTiled = S.fromList (map fst tiled)
-      forM_ tiled $ \(w, r) -> place sd w r True
-      forM_ floats $ \(w, r) -> place sd w r False
+      forM_ tiled $ \(w, r) -> place enter sd w r True
+      forM_ floats $ \(w, r) -> place enter sd w r False
       -- Stacking: tiled, floats (focused float last), fullscreen on top.
       let order = map fst tiled
                   ++ filter (/= fromMaybe nullObject focused) (map fst floats)
@@ -553,13 +584,17 @@ applyManage = do
       io $ forM_ order' $ \w -> forM_ (M.lookup w infos) (riverNodeV1PlaceTop c . wiNode)
       let hiddenHere = [ w | w <- allW, M.notMember w flt, S.notMember w shownTiled ]
       io $ mapM_ (riverWindowV1Hide c) hiddenHere
+      mapM_ forgetPos hiddenHere
       pure (filter (`notElem` hiddenHere) allW)) (W.screens ws)
 
     -- Windows on hidden workspaces.
     let visSet = S.fromList visibleWins
     modify $ \s -> s { shownWindows = visSet }
-    io $ forM_ (concatMap (W.integrate' . W.stack) (W.hidden ws)) $ \w ->
-      unless (S.member w visSet) (riverWindowV1Hide c w)
+    forM_ (concatMap (W.integrate' . W.stack) (W.hidden ws)) $ \w ->
+      unless (S.member w visSet) $ do
+        -- a window of a workspace that is sliding out stays until it is gone
+        still <- slideOut (M.lookup w leaving) w
+        unless still $ io (riverWindowV1Hide c w) >> forgetPos w
 
     -- Layer surfaces that don't pick an output (notifications, launchers,
     -- bars started without one) open on the focused screen.
@@ -577,6 +612,7 @@ applyManage = do
         io $ maybe (riverSeatV1ClearFocus c s) (riverSeatV1FocusWindow c s) focused
         modify $ \st -> st { seats = M.adjust (\x -> x { siFocused = Just focused }) s (seats st) }
 
+  scheduleAnimationFrame
   -- Remember where the pointer was when this layout was applied.
   modifySeats (\si -> si { siPosAtLayout = siPointerPos si })
   updatePresentation
@@ -606,6 +642,131 @@ updatePresentation = do
         modify $ \st -> st { outputs = M.adjust (\x -> x { oiAsync = want }) o (outputs st) }
 
 ------------------------------------------------------------------------------
+-- Animations
+
+-- | Where to draw a window now, given where it belongs. A window that was
+-- drawn somewhere else slides from there; one that is new on the screen
+-- comes from @enter@ (an offset, and the screen to stay inside) if given.
+-- Called on every manage sequence, so a moving window advances with time.
+animatedPos :: Maybe ((Int, Int), Maybe Rectangle) -> Window -> (Int, Int) -> X (Int, Int)
+animatedPos enter w target = do
+  mac <- asks (animations . config)
+  dragging <- gets (maybe False ((== w) . dragWindow) . drag)
+  case mac of
+    Just ac | not dragging -> do
+      now <- io getMonotonicTime
+      ma <- gets (M.lookup w . anims)
+      shown <- gets (M.lookup w . shownPos)
+      let fresh from clip = if from == target then Nothing else Just (Anim from target now False False clip)
+          a' = case ma of
+            Just a | anTo a == target, not (anLeaving a) -> Just a
+            -- it was going somewhere else (or leaving): turn round from where it is
+            Just a -> fresh (animAt ac now a) (anClip a)
+            Nothing -> case (shown, enter) of
+              (Just p, _) -> fresh p Nothing
+              (Nothing, Just ((dx, dy), clip)) -> fresh (fst target + dx, snd target + dy) clip
+              (Nothing, Nothing) -> Nothing
+      case a' of
+        Just a | animProgress ac now a < 1 -> do
+          let p = animAt ac now a
+          modify $ \s -> s { anims = M.insert w a (anims s), shownPos = M.insert w p (shownPos s) }
+          clipTo (anClip a) w p
+          pure p
+        _ -> arrived (ma >>= anClip)
+    -- no animations, or the window follows the pointer: no lag
+    _ -> do
+      ma <- gets (M.lookup w . anims)
+      arrived (ma >>= anClip)
+  where
+    arrived clip = do
+      forM_ clip $ \_ -> unclip w
+      modify $ \s -> s { anims = M.delete w (anims s), shownPos = M.insert w target (shownPos s) }
+      pure target
+
+-- | A window on a workspace that is no longer shown: if its workspace is
+-- sliding out (@Just@ how far and off which screen), move it one more step
+-- and say it is still on its way; False once it is gone (or does not slide).
+slideOut :: Maybe ((Int, Int), Rectangle) -> Window -> X Bool
+slideOut start w = do
+  mac <- asks (animations . config)
+  ma <- gets (M.lookup w . anims)
+  shown <- gets (M.lookup w . shownPos)
+  minfo <- gets (M.lookup w . windowInfo)
+  now <- io getMonotonicTime
+  let a' = case (ma, start, shown) of
+        (Just a, _, _) | anLeaving a -> Just a
+        -- it starts leaving from where it is drawn now
+        (_, Just ((dx, dy), clip), Just (x, y)) -> Just (Anim (x, y) (x + dx, y + dy) now False True (Just clip))
+        _ -> Nothing
+  case (mac, a', minfo) of
+    (Just ac, Just a, Just i) | animProgress ac now a < 1 -> do
+      let p = animAt ac now a
+      c <- asks conn
+      io (riverNodeV1SetPosition c (wiNode i) (fi (fst p)) (fi (snd p)))
+      modify $ \s -> s { anims = M.insert w a (anims s), shownPos = M.insert w p (shownPos s) }
+      clipTo (anClip a) w p
+      pure True
+    _ -> pure False
+
+-- | A window that is hidden now: it has no position to slide from later.
+forgetPos :: Window -> X ()
+forgetPos w = do
+  had <- gets (M.lookup w . anims)
+  forM_ (had >>= anClip) $ \_ -> unclip w
+  modify $ \s -> s { anims = M.delete w (anims s), shownPos = M.delete w (shownPos s) }
+
+-- | 0 at the start of a movement, 1 when it has arrived.
+animProgress :: AnimationConfig -> Double -> Anim -> Double
+animProgress ac now a
+  | animDuration ac <= 0 = 1
+  | not (anStarted a) = 0
+  | otherwise = max 0 (min 1 ((now - anStart a) * 1000 / fromIntegral (animDuration ac)))
+
+-- | Where a moving window is now: fast at first, settling at the end.
+animAt :: AnimationConfig -> Double -> Anim -> (Int, Int)
+animAt ac now a = (go (fst (anFrom a)) (fst (anTo a)), go (snd (anFrom a)) (snd (anTo a)))
+  where
+    t = animProgress ac now a
+    e = 1 - (1 - t) ^ (3 :: Int)
+    go from to = from + round (fromIntegral (to - from) * e :: Double)
+
+-- | Keep a sliding window inside its screen, so it does not show on the
+-- monitor next to it. The clip box is relative to the window.
+clipTo :: Maybe Rectangle -> Window -> (Int, Int) -> X ()
+clipTo Nothing _ _ = pure ()
+clipTo (Just (Rectangle sx sy sw sh)) w (px, py) = do
+  v <- asks (gWmVersion . globals)
+  c <- asks conn
+  when (v >= 2) $ io (riverWindowV1SetClipBox c w (fi (sx - px)) (fi (sy - py)) (fi sw) (fi sh))
+
+unclip :: Window -> X ()
+unclip w = do
+  v <- asks (gWmVersion . globals)
+  c <- asks conn
+  alive <- gets (M.member w . windowInfo)
+  when (v >= 2 && alive) $ io (riverWindowV1SetClipBox c w 0 0 0 0)
+
+-- | While something is moving, ask for another manage sequence one frame
+-- from now; movements nobody advanced for a while (a window that went
+-- fullscreen, say) are dropped so the frames stop.
+scheduleAnimationFrame :: X ()
+scheduleAnimationFrame = do
+  mac <- asks (animations . config)
+  forM_ mac $ \ac -> do
+    now <- io getMonotonicTime
+    stale <- gets (M.keys . M.filter (\a -> (now - anStart a) * 1000 > fromIntegral (animDuration ac) + 500) . anims)
+    mapM_ (\w -> gets (M.lookup w . anims) >>= \a -> forM_ (a >>= anClip) (const (unclip w))) stale
+    modify $ \s -> s { anims = foldr M.delete (anims s) stale }
+    active <- gets (not . M.null . anims)
+    scheduled <- gets animTick
+    when (active && not scheduled) $ do
+      modify $ \s -> s { animTick = True }
+      ch <- asks inputs
+      void $ io $ forkIO $ do
+        threadDelay (1000000 `div` max 1 (animFps ac))
+        writeChan ch (InRun (modify (\s -> s { animTick = False })))
+
+------------------------------------------------------------------------------
 -- Render sequence
 
 onRenderStart :: X ()
@@ -617,6 +778,11 @@ onRenderStart = do
 
 renderBody :: X ()
 renderBody = do
+  -- A movement starts when its first frame is drawn, which is now: river
+  -- may have waited for windows to redraw since the manage sequence that
+  -- created it, and that wait must not eat the beginning.
+  now <- io getMonotonicTime
+  modify $ \s -> s { anims = M.map (\a -> if anStarted a then a else a { anStart = now, anStarted = True }) (anims s) }
   -- A presentation hint arrives right before a render sequence.
   updatePresentation
   c <- asks conn
@@ -636,6 +802,7 @@ renderBody = do
           fits = fw == dw + 2 * bw && fh == dh + 2 * bw
       setFloatGeometry w (Rectangle x y fw fh)
       io (riverNodeV1SetPosition c (wiNode i) (fi (x + bw)) (fi (y + bw)))
+      modify $ \s -> s { shownPos = M.insert w (x + bw, y + bw) (shownPos s), anims = M.delete w (anims s) }
       modify $ \s -> s { needsCenter = S.delete w (needsCenter s) }
       -- Its proposal was (0,0). The next manage sequence proposes the size
       -- of the float: nothing to send if the window fits, the shrunk size

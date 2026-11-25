@@ -69,6 +69,9 @@ the stable `river-window-management-v1` protocol. Because of this split:
   , shadows = Just def { shadowRadius = 18, shadowOffset = (0, 5)
                        , shadowColor = "#000000", shadowOpacity = 0.5 }
   ```
+* animations: windows slide to their new place when the layout changes
+  and workspaces slide in and out (`animations = Just def`); positions
+  only, river's protocol has no opacity or scaling
 * layer-shell (waybar, fuzzel, …), with the space taken by bars excluded
 * `~/.config/rivermonad/rivermonad.hs` recompiled with ghc; `mod-q`
   recompiles and restarts while keeping each window's workspace, stack

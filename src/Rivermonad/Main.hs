@@ -156,6 +156,7 @@ runWM cfg = do
         { windowset = ws0, windowInfo = M.empty, outputs = M.empty, seats = M.empty
         , keyActions = M.empty, pointerActions = M.empty, pending = [], newWindows = []
         , outputsDirty = False, haveScreens = False, fullscreen = S.empty, needsCenter = S.empty, shownWindows = S.empty
+        , anims = M.empty, shownPos = M.empty, shownTags = M.empty, animTick = False
         , drag = Nothing, sessionLocked = False, started = False
         , restoreState = rsWindows restored, restarting = False, restoreView = rsView restored
         , restoreOrder = rsOrder restored

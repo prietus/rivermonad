@@ -7,7 +7,7 @@
 %{?haskell_setup}
 
 Name:           %{pkg_name}
-Version:        0.4.5
+Version:        0.5.0
 Release:        1%{?dist}
 Summary:        Xmonad-style tiling window manager for the river Wayland compositor
 
@@ -234,6 +234,10 @@ desktop-file-validate %{buildroot}%{_datadir}/wayland-sessions/%{name}.desktop
 
 
 %changelog
+* Wed Nov 25 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.5.0-1
+- Animations: windows slide to their place when the layout changes and
+  workspaces slide in and out (animations = Just def)
+
 * Mon Nov 23 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.4.5-1
 - rivermonad-dotfiles: the top-left hot corner opens spacelet's overview
 
