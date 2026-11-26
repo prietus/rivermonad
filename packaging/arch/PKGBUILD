@@ -17,7 +17,7 @@ optdepends=('foot: the default terminal'
             'river-fx: river with rounded corners, translucency, blur, shadows and fades (replaces river)'
             'libnotify: notifications when the configuration fails to compile')
 source=("$pkgbase-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('c994ef7546713d8aae4d6954443fe0fbf432fde0128472cea09bdb5155edc9c8')
 
 build() {
   cd $pkgbase-$pkgver
