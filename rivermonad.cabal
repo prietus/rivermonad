@@ -1,6 +1,6 @@
 cabal-version:      3.0
 name:               rivermonad
-version:            0.6.0
+version:            0.6.1
 synopsis:           An xmonad-style tiling window manager for the river Wayland compositor
 description:
   rivermonad brings xmonad's model (StackSet, layouts, manage hooks and a

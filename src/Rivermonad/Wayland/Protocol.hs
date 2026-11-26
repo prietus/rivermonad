@@ -2144,13 +2144,13 @@ decodeRiverLibinputResultV1Event 1 = Just (pure (RiverLibinputResultV1Unsupporte
 decodeRiverLibinputResultV1Event 2 = Just (pure (RiverLibinputResultV1Invalid, []))
 decodeRiverLibinputResultV1Event _ = Nothing
 
--- * river_fx_v1 (version 2)
+-- * river_fx_v1 (version 3)
 
 riverFxV1Interface :: ByteString
 riverFxV1Interface = "river_fx_v1"
 
 riverFxV1Version :: Word32
-riverFxV1Version = 2
+riverFxV1Version = 3
 
 -- | river_fx_v1.destroy (opcode 0)
 riverFxV1Destroy :: Conn -> ObjectId -> IO ()
@@ -2177,4 +2177,8 @@ riverFxV1SetShadow c self a0 a1 a2 a3 a4 a5 a6 a7 = sendRequest c self 4 (putObj
 -- | river_fx_v1.set_close_fade (opcode 5)
 riverFxV1SetCloseFade :: Conn -> ObjectId -> ObjectId -> Word32 -> IO ()
 riverFxV1SetCloseFade c self a0 a1 = sendRequest c self 5 (putObj a0 <> putUint a1)
+
+-- | river_fx_v1.set_layer_effects (opcode 6)
+riverFxV1SetLayerEffects :: Conn -> ObjectId -> ByteString -> Word32 -> Word32 -> Word32 -> Int32 -> Int32 -> Word32 -> Word32 -> Word32 -> Word32 -> IO ()
+riverFxV1SetLayerEffects c self a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 = sendRequest c self 6 (putString a0 <> putUint a1 <> putUint a2 <> putUint a3 <> putInt a4 <> putInt a5 <> putUint a6 <> putUint a7 <> putUint a8 <> putUint a9)
 

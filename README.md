@@ -74,7 +74,8 @@ the stable `river-window-management-v1` protocol. Because of this split:
 * on [river-fx](https://github.com/prietus/river-fx), river drawn with
   SceneFX: rounded corners, translucent windows and blur
   (`effects = Just def`), shadows that follow the corners, and fades when
-  windows appear, close and change workspace. On plain river none of it
+  windows appear, close and change workspace; bars, launchers and desktop
+  widgets take corners, blur and shadows too (`fxLayers`). On plain river none of it
   applies and everything else works the same
 * layer-shell (waybar, fuzzel, …), with the space taken by bars excluded
 * `~/.config/rivermonad/rivermonad.hs` recompiled with ghc; `mod-q`

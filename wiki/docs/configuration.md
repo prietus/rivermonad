@@ -192,7 +192,29 @@ nothing and everything else works the same.
 | `fxInactiveOpacity` | `1` | opacity of the other windows |
 | `fxBlur` | `0` | blur what shows through windows, 0 (none) to 1; it costs GPU time, leave it at 0 if nothing is translucent |
 
+| `fxLayers` | `[]` | effects for layer surfaces (bars, launchers, widgets), see below |
+
 Fullscreen windows are always opaque and square.
+
+Bars, launchers, notifications and desktop widgets are not windows but
+layer-shell surfaces, and take their effects by namespace, the name each
+program gives its surfaces:
+
+```haskell
+  , effects = Just def
+      { fxLayers = [ (layerEffects "hasklets") { leCornerRadius = 20, leShadow = Just def }
+                   , (layerEffects "waymobar") { leBlur = 1 }
+                   , (layerEffects "launcher") { leBlur = 1, leCornerRadius = 12, leShadow = Just def } ]
+      }
+```
+
+| Field | |
+|---|---|
+| `leCornerRadius` | rounded corners, in pixels |
+| `leBlur` | blur behind the surface, 0 to 1; only where it draws something, so a bar made of separate pills blurs only behind them, and only shows if the program draws translucent |
+| `leShadow` | a shadow, with the settings of [`shadows`](#shadows); cast by the whole rectangle of the surface with `leCornerRadius`, so it suits surfaces that are one box (hasklets cards placed on their own, a launcher), not a bar of pills |
+
+fuzzel's namespace is `launcher`, mako's `notifications`.
 
 On river-fx the [`shadows`](#shadows) are drawn by the compositor too, with
 the same settings: they follow the rounded corners and do not show through

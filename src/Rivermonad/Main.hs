@@ -32,6 +32,7 @@ import Rivermonad.Core
 import Rivermonad.Config (defaultConfig)
 import Rivermonad.Engine
 import Rivermonad.Recompile
+import Rivermonad.Shadows (shadowRgb)
 import Rivermonad.Status (runStatusClient)
 import Rivermonad.IPC (publishActionsIPC, publishIPC, publishWindowsIPC, runIPCClient, startIPCServer)
 import Rivermonad.Operations (queue)
@@ -149,7 +150,21 @@ runWM cfg = do
                   , gInputManager = fst <$> mim, gXkbConfig = fst <$> mxc, gLibinput = fst <$> mli
                   , gCompositor = fst <$> mcomp, gShm = fst <$> mshm
                   , gFx = fst <$> mfx, gFxVersion = maybe 0 (fromIntegral . snd) mfx }
-      xconf = XConf { config = cfg, conn = c, globals = g, inputs = ch
+      fxWord x = round (max 0 (min 1 x) * 4294967295 :: Double) :: Word32
+  -- river-fx: effects of layer surfaces, by namespace
+  case (gFx g, effects cfg) of
+    (Just fxo, Just ec) | gFxVersion g >= 3 -> forM_ (fxLayers ec) $ \le -> do
+      let (sr, sx, sy, cr, cg, cb, ca) = case leShadow le of
+            Just sc -> let (r', g', b') = shadowRgb sc
+                           a = max 0 (min 1 (shadowOpacity sc))
+                           (dx, dy) = shadowOffset sc
+                       in (max 0 (shadowRadius sc), dx, dy, r' * a, g' * a, b' * a, a)
+            Nothing -> (0, 0, 0, 0, 0, 0, 0)
+      riverFxV1SetLayerEffects c fxo (BC.pack (leNamespace le)) (fromIntegral (max 0 (leCornerRadius le)))
+        (fxWord (leBlur le)) (fromIntegral sr) (fromIntegral sx) (fromIntegral sy)
+        (fxWord cr) (fxWord cg) (fxWord cb) (fxWord ca)
+    _ -> pure ()
+  let xconf = XConf { config = cfg, conn = c, globals = g, inputs = ch
                     , ipcPublish = maybe (const (pure ())) publishIPC ipcSrv
                     , ipcPublishWindows = maybe (const (pure ())) publishWindowsIPC ipcSrv }
       ws0 = applyRestoredLayouts (layoutHook cfg) (rsLayouts restored)

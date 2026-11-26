@@ -64,7 +64,14 @@ myConfig = def
     -- rounded corners, slightly translucent inactive windows and blur.
     -- Only on river-fx (https://github.com/prietus/river-fx); on plain
     -- river they do nothing
-  , effects            = Just def { fxCornerRadius = 12, fxInactiveOpacity = 0.92, fxBlur = 1 }
+  , effects            = Just def
+      { fxCornerRadius = 12, fxInactiveOpacity = 0.92, fxBlur = 1
+        -- effects for layer surfaces, by namespace. A shadow under each
+        -- hasklets card, for cards dragged to a place of their own (the
+        -- ones still in columns share one surface, and one square shadow);
+        -- the radius is that of the cards, 16 x the scale of hasklets:
+        -- , fxLayers = [ (layerEffects "hasklets") { leCornerRadius = 20, leShadow = Just def { shadowRadius = 22, shadowOpacity = 0.55 } } ]
+      }
   , logHook            = do
       workspaceHistoryHook
       mostRecentlyUsedHook

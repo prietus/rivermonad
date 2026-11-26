@@ -21,7 +21,7 @@ module Rivermonad.Core
   , InputDev (..), XkbKb (..), LiDev (..), KeymapState (..)
   , ShadowConfig (..), Shadow (..)
   , AnimationConfig (..), Anim (..)
-  , EffectsConfig (..)
+  , EffectsConfig (..), LayerEffects (..), layerEffects
     -- * The X monad
   , X, XConf (..), XState (..), RationalRectS, runX, io, catchX, userCode, userCodeDef
   , withWindowSet, gets, modify, asks, ask, get, put
@@ -320,10 +320,34 @@ data EffectsConfig = EffectsConfig
   , fxBlur            :: !Double
     -- ^ blur what shows through windows, 0 (none) to 1. It costs GPU time:
     -- leave it at 0 if no window is translucent
+  , fxLayers          :: ![LayerEffects]
+    -- ^ effects for layer-shell surfaces (bars, launchers, notifications,
+    -- desktop widgets), by namespace
   }
 
 instance Default EffectsConfig where
-  def = EffectsConfig 10 1 1 0
+  def = EffectsConfig 10 1 1 0 []
+
+-- | Effects for the layer-shell surfaces with a namespace (river-fx).
+-- Start from 'layerEffects':
+--
+-- > fxLayers = [ (layerEffects "waymobar") { leBlur = 1 }
+-- >            , (layerEffects "launcher") { leBlur = 1, leCornerRadius = 12, leShadow = Just def } ]
+--
+-- The blur is drawn only where the surface draws something, so a bar made
+-- of separate pills blurs only behind them. The shadow is cast by the whole
+-- rectangle of the surface: it suits surfaces that are one box.
+data LayerEffects = LayerEffects
+  { leNamespace    :: !String                -- ^ the namespace the program gives its surfaces
+  , leCornerRadius :: !Int                   -- ^ rounded corners, in pixels
+  , leBlur         :: !Double                -- ^ blur behind it, 0 (none) to 1
+  , leShadow       :: !(Maybe ShadowConfig)  -- ^ a shadow around it ('shadowTiled' is not used)
+  }
+
+-- | No effects for a namespace: set the ones wanted with record syntax.
+layerEffects :: String -> LayerEffects
+layerEffects ns = LayerEffects ns 0 0 Nothing
+
 
 ------------------------------------------------------------------------------
 -- Animations
