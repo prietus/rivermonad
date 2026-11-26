@@ -15,7 +15,7 @@ module Rivermonad.Engine
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.Chan (writeChan)
 import qualified Control.Exception as E
-import Control.Monad (forM_, unless, when, void)
+import Control.Monad (filterM, forM_, unless, when, void)
 import qualified Data.ByteString.Char8 as BC
 import Data.Char (digitToInt, isHexDigit)
 import Data.List (elemIndex, isInfixOf, sortOn)
@@ -437,6 +437,10 @@ manageWindow w = do
       if ssd then riverWindowV1UseSsd c w else riverWindowV1UseCsd c w
       riverWindowV1SetCapabilities c w riverWindowV1CapabilitiesFullscreen
     modifyInfo w (\i -> i { wiManaged = True, wiDecoSent = Just ssd })
+    -- river-fx: an opacity of its own, if a rule gives it one
+    rules <- asks (maybe [] fxOpacityRules . effects . config)
+    matched <- filterM (\(q, _) -> userCodeDef False (runQuery q w)) rules
+    forM_ (take 1 matched) $ \(_, o) -> modifyInfo w (\i -> i { wiOpacity = Just o })
     restore <- gets (M.lookup (wiIdentifier info) . restoreState)
     case restore of
       Just (t, mr) -> do
@@ -730,34 +734,43 @@ sendFx w = do
     focused <- gets (W.peek . windowset)
     isFs <- gets (S.member w . fullscreen)
     ma <- gets (M.lookup w . anims)
+    own <- gets (\s -> M.lookup w (windowInfo s) >>= wiOpacity)
     now <- io getMonotonicTime
     let ec = effects cfg
-        base = maybe 1 (\e -> if Just w == focused then fxActiveOpacity e else fxInactiveOpacity e) ec
+        byFocus = maybe 1 (\e -> if Just w == focused then fxActiveOpacity e else fxInactiveOpacity e) ec
         eased a ac = let t = animProgress ac now a in 1 - (1 - t) ^ (3 :: Int)
         factor = case (ma, animations cfg) of
           (Just a, Just ac) | anFade a > 0 -> eased a ac
                             | anFade a < 0 -> 1 - eased a ac
           _ -> 1
         -- a fullscreen window is opaque: nothing shows behind it anyway
-        op = if isFs then 1 else max 0 (min 1 (base * factor))
+        op = if isFs then 1 else max 0 (min 1 (fromMaybe byFocus own * factor))
         word x = round (max 0 (min 1 x) * 4294967295) :: Word32
-    v2 <- asks ((>= 2) . gFxVersion . globals)
-    shadow <- if v2 then maybe (pure False) (`shadowWanted` w) (shadows cfg) else pure False
-    let want = (word op, maybe 0 (max 0 . fxCornerRadius) ec, maybe 0 (word . fxBlur) ec, shadow)
+    gl <- asks globals
+    let v2 = gFxVersion gl >= 2
+    hasShadow <- if v2 then maybe (pure False) (`shadowWanted` w) (shadows cfg) else pure False
+    let glow = ec >>= fxFocusedShadowColor
+        shadow = if hasShadow then Just (Just w == focused && isJust glow) else Nothing
+        dim = if isFs || Just w == focused then 0 else maybe 0 fxInactiveDim ec
+        want0 = (word op, maybe 0 (max 0 . fxCornerRadius) ec, maybe 0 (word . fxBlur) ec, shadow)
+        want = let (a, b, c', d) = want0 in (a, b, c', d, word dim)
     sent <- gets (\s -> M.lookup w (windowInfo s) >>= wiFxSent)
     when (sent /= Just want) $ do
       c <- asks conn
-      let (o, r, b, sh) = want
-          (so, sr, sb, ssh) = fromMaybe (maxBound, 0, 0, False) sent
+      let (o, r, b, sh, dm) = want
+          (so, sr, sb, ssh, sdm) = fromMaybe (maxBound, 0, 0, Nothing, 0) sent
+          v5 = gFxVersion gl >= 5
           new = sent == Nothing
       io $ do
         when (o /= so || new) (riverFxV1SetOpacity c fxo w o)
         when (r /= sr || new) (riverFxV1SetCornerRadius c fxo w (fi r))
         when (b /= sb || new) (riverFxV1SetBlur c fxo w b)
-        when (sh /= ssh) $ case shadows cfg of
-          Just sc | sh -> do
+        when (v5 && dm /= sdm) (riverFxV1SetDim c fxo w dm)
+        when (sh /= ssh) $ case (shadows cfg, sh) of
+          (Just sc0, Just lit) -> do
             -- premultiplied, like border colours
-            let (cr, cg, cb) = shadowRgb sc
+            let sc = if lit then sc0 { shadowColor = fromMaybe (shadowColor sc0) glow } else sc0
+                (cr, cg, cb) = shadowRgb sc
                 a = max 0 (min 1 (shadowOpacity sc))
                 (dx, dy) = shadowOffset sc
             riverFxV1SetShadow c fxo w (fi (max 0 (shadowRadius sc))) (fi dx) (fi dy)
@@ -766,7 +779,13 @@ sendFx w = do
         -- a window that closes fades out: river-fx does it, the window is
         -- out of our hands by then
         when (new && v2) $ case animations cfg of
-          Just ac | animFade ac -> riverFxV1SetCloseFade c fxo w (fi (max 0 (animDuration ac)))
+          Just ac | animFade ac -> do
+            riverFxV1SetCloseFade c fxo w (fi (max 0 (animDuration ac)))
+            when (v5 && animCloseScale ac < 1) $
+              riverFxV1SetCloseScale c fxo w (word (animCloseScale ac))
+          _ -> pure ()
+        when (new && v5) $ case animations cfg of
+          Just ac | animResizeFade ac -> riverFxV1SetResizeFade c fxo w (fi (max 0 (animDuration ac)))
           _ -> pure ()
       modifyInfo w (\i -> i { wiFxSent = Just want })
 

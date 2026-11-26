@@ -165,6 +165,8 @@ name is on in the list.
 | `animWorkspaces` | `True` | slide workspaces in and out |
 | `animOpen` | `0` | a new window rises this many pixels into place (0: it just appears) |
 | `animFade` | `True` | windows fade in when they appear and out when they close, and workspaces fade as they slide (river-fx only) |
+| `animCloseScale` | `1` | a window that closes shrinks to this fraction of its size as it fades out, `0.9` say (river-fx only) |
+| `animResizeFade` | `False` | a window that changes size cross-fades from its old content, stretched, to the new (river-fx only) |
 
 On plain river only positions are animated: its protocol gives the window
 manager no opacity or scaling. On river-fx (see below) windows also fade.
@@ -193,6 +195,12 @@ nothing and everything else works the same.
 | `fxBlur` | `0` | blur what shows through windows, 0 (none) to 1; it costs GPU time, leave it at 0 if nothing is translucent |
 
 | `fxLayers` | `[]` | effects for layer surfaces (bars, launchers, widgets), see below |
+| `fxOpacityRules` | `[]` | windows with an opacity of their own, focused or not: `[(appId =? "foot", 0.85), (appId =? "mpv", 1)]`; the first rule that matches when the window appears |
+| `fxBlurParams` | `Nothing` | how the blur looks, see below |
+| `fxFocusedShadowColor` | `Nothing` | the shadow of the focused window in this colour, a glow around it; needs `shadows` |
+| `fxInactiveDim` | `0` | darken the windows without focus, 0 to 1; unlike `fxInactiveOpacity`, nothing shows through them |
+| `fxPopupBlur` | `0` | blur behind menus and other popups, where they are translucent, 0 to 1 |
+| `fxPopupCornerRadius` | `8` | corner radius of that blur: the one the toolkit draws its menus with |
 
 Fullscreen windows are always opaque and square.
 
@@ -213,8 +221,27 @@ program gives its surfaces:
 | `leCornerRadius` | rounded corners, in pixels |
 | `leBlur` | blur behind the surface, 0 to 1; only where it draws something, so a bar made of separate pills blurs only behind them, and only shows if the program draws translucent |
 | `leShadow` | a shadow, with the settings of [`shadows`](#shadows); cast by the whole rectangle of the surface with `leCornerRadius`, so it suits surfaces that are one box (hasklets cards placed on their own, a launcher), not a bar of pills |
+| `leFade` | milliseconds the surface takes to fade in when it appears and out when it goes away; for launchers and notifications |
 
 fuzzel's namespace is `launcher`, mako's `notifications`.
+
+Surfaces that only have the wallpaper behind them (those of the bottom
+layer, like desktop widgets, and bars with an exclusive zone) share one
+blurred copy of the wallpaper, drawn again only when the wallpaper changes.
+
+`fxBlurParams` sets how every blur is drawn:
+
+```haskell
+      , fxBlurParams = Just def { bpNoise = 0.03, bpSaturation = 1.3 }
+```
+
+| Field | Default | |
+|---|---|---|
+| `bpPasses` | `3` | 1 to 10; more is wider and costs more |
+| `bpRadius` | `5` | 1 to 20 |
+| `bpNoise` | `0.02` | grain over the blur, 0 to 1: the look of frosted glass |
+| `bpBrightness`, `bpContrast` | `0.9` | of what is seen through the blur; 1 leaves it as it is |
+| `bpSaturation` | `1.1` | more makes the colours behind stronger |
 
 On river-fx the [`shadows`](#shadows) are drawn by the compositor too, with
 the same settings: they follow the rounded corners and do not show through

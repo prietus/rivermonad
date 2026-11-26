@@ -7,7 +7,7 @@
 %{?haskell_setup}
 
 Name:           %{pkg_name}
-Version:        0.6.1
+Version:        0.6.2
 Release:        1%{?dist}
 Summary:        Xmonad-style tiling window manager for the river Wayland compositor
 
@@ -234,6 +234,14 @@ desktop-file-validate %{buildroot}%{_datadir}/wayland-sessions/%{name}.desktop
 
 
 %changelog
+* Thu Nov 26 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.6.2-1
+- More effects on river-fx: the look of the blur (fxBlurParams), an
+  opacity per application (fxOpacityRules), a glow around the focused
+  window (fxFocusedShadowColor), dimmed unfocused windows (fxInactiveDim),
+  blur behind menus (fxPopupBlur), fades for layer surfaces (leFade),
+  windows that shrink as they close (animCloseScale) and cross-fade when
+  they change size (animResizeFade)
+
 * Thu Nov 26 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.6.1-1
 - Effects for layer surfaces on river-fx (fxLayers): rounded corners, blur
   and shadows for bars, launchers and desktop widgets, by namespace

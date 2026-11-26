@@ -60,17 +60,25 @@ myConfig = def
   , layoutHook         = myLayout
   , manageHook         = manageSpawn <> myManageHook
     -- windows slide to their place and workspaces slide in and out
-  , animations         = Just def { animDuration = 200 }
+    -- (on river-fx a window that closes also shrinks a little)
+  , animations         = Just def { animDuration = 200, animCloseScale = 0.9 }
     -- rounded corners, slightly translucent inactive windows and blur.
     -- Only on river-fx (https://github.com/prietus/river-fx); on plain
     -- river they do nothing
   , effects            = Just def
       { fxCornerRadius = 12, fxInactiveOpacity = 0.92, fxBlur = 1
-        -- effects for layer surfaces, by namespace. A shadow under each
-        -- hasklets card, for cards dragged to a place of their own (the
-        -- ones still in columns share one surface, and one square shadow);
-        -- the radius is that of the cards, 16 x the scale of hasklets:
-        -- , fxLayers = [ (layerEffects "hasklets") { leCornerRadius = 20, leShadow = Just def { shadowRadius = 22, shadowOpacity = 0.55 } } ]
+        -- frosted glass: a little grain and more colour through the blur
+      , fxBlurParams = Just def { bpNoise = 0.03, bpSaturation = 1.3 }
+        -- windows with an opacity of their own, focused or not
+      , fxOpacityRules = [ (appId =? "mpv", 1) ]
+        -- the launcher and the notifications fade in and out
+      , fxLayers = [ (layerEffects "launcher") { leFade = 150 }
+                   , (layerEffects "notifications") { leFade = 200 } ]
+        -- To add to fxLayers: a shadow under each hasklets card, for cards
+        -- dragged to a place of their own (the ones still in columns share
+        -- one surface, and one square shadow); the radius is that of the
+        -- cards, 16 x the scale of hasklets:
+        --   (layerEffects "hasklets") { leCornerRadius = 20, leShadow = Just def { shadowRadius = 22, shadowOpacity = 0.55 } }
       }
   , logHook            = do
       workspaceHistoryHook

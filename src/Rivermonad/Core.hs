@@ -21,7 +21,7 @@ module Rivermonad.Core
   , InputDev (..), XkbKb (..), LiDev (..), KeymapState (..)
   , ShadowConfig (..), Shadow (..)
   , AnimationConfig (..), Anim (..)
-  , EffectsConfig (..), LayerEffects (..), layerEffects
+  , EffectsConfig (..), LayerEffects (..), layerEffects, BlurParams (..)
     -- * The X monad
   , X, XConf (..), XState (..), RationalRectS, runX, io, catchX, userCode, userCodeDef
   , withWindowSet, gets, modify, asks, ask, get, put
@@ -164,7 +164,10 @@ data WindowInfo = WindowInfo
   , wiGeom       :: !(Maybe Rectangle)  -- ^ last placement, borders included
   , wiAsync      :: !Bool               -- ^ the window prefers tearing (async presentation)
   , wiPid        :: !(Maybe Int)        -- ^ pid of the process that made it (unreliable: may be reused)
-  , wiFxSent     :: !(Maybe (Word32, Int, Word32, Bool)) -- ^ last opacity, corner radius, blur and shadow sent (river-fx)
+  , wiFxSent     :: !(Maybe (Word32, Int, Word32, Maybe Bool, Word32))
+    -- ^ last opacity, corner radius, blur, shadow (Just True: the one of the
+    -- focused window) and dim sent (river-fx)
+  , wiOpacity    :: !(Maybe Double)     -- ^ its opacity by 'fxOpacityRules', in place of the active and inactive ones
   } deriving (Show)
 
 emptyWindowInfo :: ObjectId -> WindowInfo
@@ -172,7 +175,7 @@ emptyWindowInfo node = WindowInfo
   { wiNode = node, wiAppId = "", wiTitle = "", wiIdentifier = "", wiParent = Nothing
   , wiMinSize = (0, 0), wiMaxSize = (0, 0), wiDims = Nothing, wiDecoration = 3
   , wiManaged = False, wiProposed = Nothing, wiTiled = Nothing, wiFullscreen = Nothing
-  , wiDecoSent = Nothing, wiGeom = Nothing, wiAsync = False, wiPid = Nothing, wiFxSent = Nothing }
+  , wiDecoSent = Nothing, wiGeom = Nothing, wiAsync = False, wiPid = Nothing, wiFxSent = Nothing, wiOpacity = Nothing }
 
 data OutputInfo = OutputInfo
   { oiPos        :: !(Maybe (Int, Int))
@@ -323,10 +326,40 @@ data EffectsConfig = EffectsConfig
   , fxLayers          :: ![LayerEffects]
     -- ^ effects for layer-shell surfaces (bars, launchers, notifications,
     -- desktop widgets), by namespace
+  , fxOpacityRules    :: ![(Query Bool, Double)]
+    -- ^ windows with an opacity of their own, focused or not: the first
+    -- rule that matches when the window appears. For example
+    -- @[(appId =? "foot", 0.85), (appId =? "mpv", 1)]@
+  , fxBlurParams      :: !(Maybe BlurParams)
+    -- ^ how the blur looks; Nothing = the defaults of the compositor
+  , fxFocusedShadowColor :: !(Maybe String)
+    -- ^ the shadow of the focused window in this colour ("#rrggbb"): a
+    -- glow around it. Needs 'shadows'; Nothing = the same shadow for all
+  , fxInactiveDim     :: !Double
+    -- ^ darken the windows without focus, 0 (not at all) to 1 (black).
+    -- Unlike 'fxInactiveOpacity', nothing shows through them
+  , fxPopupBlur       :: !Double
+    -- ^ blur behind menus and other popups, where they are translucent, 0 to 1
+  , fxPopupCornerRadius :: !Int
+    -- ^ corner radius of that blur: the one the toolkit draws its menus with
   }
 
 instance Default EffectsConfig where
-  def = EffectsConfig 10 1 1 0 []
+  def = EffectsConfig 10 1 1 0 [] [] Nothing Nothing 0 0 8
+
+-- | How the compositor draws every blur (river-fx). 'def' is what it does
+-- on its own; for frosted glass try @def { bpNoise = 0.04, bpSaturation = 1.4 }@.
+data BlurParams = BlurParams
+  { bpPasses     :: !Int     -- ^ 1 to 10: more is wider and dearer
+  , bpRadius     :: !Int     -- ^ 1 to 20
+  , bpNoise      :: !Double  -- ^ grain over the blur, 0 to 1
+  , bpBrightness :: !Double  -- ^ of what is seen through it; 1 leaves it as it is
+  , bpContrast   :: !Double
+  , bpSaturation :: !Double
+  }
+
+instance Default BlurParams where
+  def = BlurParams 3 5 0.02 0.9 0.9 1.1
 
 -- | Effects for the layer-shell surfaces with a namespace (river-fx).
 -- Start from 'layerEffects':
@@ -342,11 +375,14 @@ data LayerEffects = LayerEffects
   , leCornerRadius :: !Int                   -- ^ rounded corners, in pixels
   , leBlur         :: !Double                -- ^ blur behind it, 0 (none) to 1
   , leShadow       :: !(Maybe ShadowConfig)  -- ^ a shadow around it ('shadowTiled' is not used)
+  , leFade         :: !Int
+    -- ^ milliseconds it takes to fade in when it appears and out when it
+    -- goes away (0: at once). For launchers, notifications and the like
   }
 
 -- | No effects for a namespace: set the ones wanted with record syntax.
 layerEffects :: String -> LayerEffects
-layerEffects ns = LayerEffects ns 0 0 Nothing
+layerEffects ns = LayerEffects ns 0 0 Nothing 0
 
 
 ------------------------------------------------------------------------------
@@ -365,10 +401,16 @@ data AnimationConfig = AnimationConfig
     -- ^ windows fade in when they appear and out when they close, and
     -- workspaces fade as they slide. Needs river-fx (opacity); on plain
     -- river nothing fades
+  , animCloseScale :: !Double
+    -- ^ a window that closes shrinks to this fraction of its size as it
+    -- fades out (1 = it keeps its size). Needs 'animFade' and river-fx
+  , animResizeFade :: !Bool
+    -- ^ a window that changes size cross-fades from its old content to the
+    -- new, instead of jumping. Needs river-fx
   }
 
 instance Default AnimationConfig where
-  def = AnimationConfig 200 60 True 0 True
+  def = AnimationConfig 200 60 True 0 True 1 False
 
 -- | A window moving from one position to another.
 data Anim = Anim

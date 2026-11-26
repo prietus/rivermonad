@@ -163,6 +163,17 @@ runWM cfg = do
       riverFxV1SetLayerEffects c fxo (BC.pack (leNamespace le)) (fromIntegral (max 0 (leCornerRadius le)))
         (fxWord (leBlur le)) (fromIntegral sr) (fromIntegral sx) (fromIntegral sy)
         (fxWord cr) (fxWord cg) (fxWord cb) (fxWord ca)
+      when (gFxVersion g >= 5 && leFade le > 0) $
+        riverFxV1SetLayerFade c fxo (BC.pack (leNamespace le)) (fromIntegral (leFade le))
+    _ -> pure ()
+  case (gFx g, effects cfg) of
+    (Just fxo, Just ec) | gFxVersion g >= 5, fxPopupBlur ec > 0 ->
+      riverFxV1SetPopupBlur c fxo (fxWord (fxPopupBlur ec)) (fromIntegral (max 0 (fxPopupCornerRadius ec)))
+    _ -> pure ()
+  case (gFx g, effects cfg >>= fxBlurParams) of
+    (Just fxo, Just bp) | gFxVersion g >= 4 ->
+      riverFxV1SetBlurParameters c fxo (fromIntegral (max 1 (bpPasses bp))) (fromIntegral (max 1 (bpRadius bp)))
+        (bpNoise bp) (bpBrightness bp) (bpContrast bp) (bpSaturation bp)
     _ -> pure ()
   let xconf = XConf { config = cfg, conn = c, globals = g, inputs = ch
                     , ipcPublish = maybe (const (pure ())) publishIPC ipcSrv

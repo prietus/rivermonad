@@ -37,7 +37,7 @@
     together with positions, borders and the rest of the rendering state.
   </description>
 
-  <interface name="river_fx_v1" version="3">
+  <interface name="river_fx_v1" version="5">
     <description summary="window effects global">
       This global should only be advertised to the window manager process.
 
@@ -182,6 +182,11 @@
         in places (a bar made of separate pills, widgets with gaps between
         them) blurs only behind what it shows.
 
+        Surfaces that normally have only the wallpaper behind them (those of
+        the bottom layer, and those of the top layer with an exclusive zone)
+        share one blurred copy of the background layer, drawn again only
+        when the wallpaper changes, instead of blurring on their own.
+
         The shadow is the one of set_shadow, cast by the whole rectangle of
         the surface with the corner radius given here. It does not follow
         what the surface draws inside: it suits surfaces that are one
@@ -201,6 +206,103 @@
       <arg name="g" type="uint"/>
       <arg name="b" type="uint"/>
       <arg name="a" type="uint" summary="0: no shadow"/>
+    </request>
+
+    <request name="set_blur_parameters" since="4">
+      <description summary="how the blur looks">
+        Set how every blur of the compositor is drawn, in place of the
+        defaults of SceneFX (3 passes, radius 5, noise 0.02, brightness 0.9,
+        contrast 0.9, saturation 1.1).
+
+        Passes and radius make the blur wider (and dearer). The noise is a
+        grain drawn over it, which hides banding and gives the look of
+        frosted glass. Brightness, contrast and saturation change what is
+        seen through the blur: 1 leaves it as it is.
+
+        This is not rendering state: it takes effect at once. The defaults
+        come back when this river_fx_v1 object is destroyed.
+      </description>
+      <arg name="passes" type="uint" summary="1 to 10"/>
+      <arg name="radius" type="uint" summary="1 to 20"/>
+      <arg name="noise" type="fixed" summary="0 to 1"/>
+      <arg name="brightness" type="fixed" summary="0 to 2"/>
+      <arg name="contrast" type="fixed" summary="0 to 2"/>
+      <arg name="saturation" type="fixed" summary="0 to 2"/>
+    </request>
+
+    <request name="set_dim" since="5">
+      <description summary="darken a window">
+        Draw the window darker: black over it with this strength, a 32-bit
+        fraction (0, the default, is not at all). Unlike a lower opacity,
+        nothing shows through. It is not drawn while the window is
+        fullscreen.
+
+        This request modifies rendering state and may only be made as part of
+        a manage or render sequence, see the river_window_manager_v1
+        description.
+      </description>
+      <arg name="window" type="object" interface="river_window_v1"/>
+      <arg name="strength" type="uint" summary="0 (none) to 0xffffffff (black)"/>
+    </request>
+
+    <request name="set_close_scale" since="5">
+      <description summary="shrink a window as it fades out">
+        While the window fades out after it closes (set_close_fade), also
+        shrink it towards its centre, down to this fraction of its size at
+        the end: a 32-bit fraction, 0xffffffff (the default) keeps its size.
+
+        This request modifies rendering state and may only be made as part of
+        a manage or render sequence, see the river_window_manager_v1
+        description.
+      </description>
+      <arg name="window" type="object" interface="river_window_v1"/>
+      <arg name="scale" type="uint" summary="final size, 0 to 0xffffffff (unchanged)"/>
+    </request>
+
+    <request name="set_resize_fade" since="5">
+      <description summary="cross-fade a window that changes size">
+        When the window changes size, its previous content, stretched to the
+        new size, stays over the new one and fades out over this many
+        milliseconds, instead of being replaced at once. 0 (the default)
+        replaces it at once. While one fade lasts, further changes of size
+        do not start another.
+
+        This request modifies rendering state and may only be made as part of
+        a manage or render sequence, see the river_window_manager_v1
+        description.
+      </description>
+      <arg name="window" type="object" interface="river_window_v1"/>
+      <arg name="duration" type="uint" summary="milliseconds"/>
+    </request>
+
+    <request name="set_layer_fade" since="5">
+      <description summary="fade layer surfaces in and out">
+        The layer surfaces with this namespace fade in over this many
+        milliseconds when they appear, and their last content fades out
+        where it was when they go away. 0 (the default) shows and hides them
+        at once.
+
+        Like set_layer_effects, this is not rendering state, and it is
+        removed when this river_fx_v1 object is destroyed.
+      </description>
+      <arg name="namespace" type="string"/>
+      <arg name="duration" type="uint" summary="milliseconds"/>
+    </request>
+
+    <request name="set_popup_blur" since="5">
+      <description summary="blur behind menus">
+        Blur what is behind the popups of windows and of layer surfaces
+        (menus, drop-downs, tooltips), where they are translucent. The
+        strength is a 32-bit fraction as in set_blur; the corner radius, in
+        logical pixels, is that of the blurred shape and should be the one
+        the toolkit draws its menus with. Only the geometry of the popup is
+        blurred, not the margin where it draws its own shadow.
+
+        This is not rendering state: it applies to the popups opened from
+        now on, and is removed when this river_fx_v1 object is destroyed.
+      </description>
+      <arg name="strength" type="uint" summary="0 (none) to 0xffffffff (full)"/>
+      <arg name="corner_radius" type="uint" summary="in logical pixels"/>
     </request>
   </interface>
 </protocol>

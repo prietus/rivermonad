@@ -2144,13 +2144,13 @@ decodeRiverLibinputResultV1Event 1 = Just (pure (RiverLibinputResultV1Unsupporte
 decodeRiverLibinputResultV1Event 2 = Just (pure (RiverLibinputResultV1Invalid, []))
 decodeRiverLibinputResultV1Event _ = Nothing
 
--- * river_fx_v1 (version 3)
+-- * river_fx_v1 (version 5)
 
 riverFxV1Interface :: ByteString
 riverFxV1Interface = "river_fx_v1"
 
 riverFxV1Version :: Word32
-riverFxV1Version = 3
+riverFxV1Version = 5
 
 -- | river_fx_v1.destroy (opcode 0)
 riverFxV1Destroy :: Conn -> ObjectId -> IO ()
@@ -2181,4 +2181,28 @@ riverFxV1SetCloseFade c self a0 a1 = sendRequest c self 5 (putObj a0 <> putUint 
 -- | river_fx_v1.set_layer_effects (opcode 6)
 riverFxV1SetLayerEffects :: Conn -> ObjectId -> ByteString -> Word32 -> Word32 -> Word32 -> Int32 -> Int32 -> Word32 -> Word32 -> Word32 -> Word32 -> IO ()
 riverFxV1SetLayerEffects c self a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 = sendRequest c self 6 (putString a0 <> putUint a1 <> putUint a2 <> putUint a3 <> putInt a4 <> putInt a5 <> putUint a6 <> putUint a7 <> putUint a8 <> putUint a9)
+
+-- | river_fx_v1.set_blur_parameters (opcode 7)
+riverFxV1SetBlurParameters :: Conn -> ObjectId -> Word32 -> Word32 -> Double -> Double -> Double -> Double -> IO ()
+riverFxV1SetBlurParameters c self a0 a1 a2 a3 a4 a5 = sendRequest c self 7 (putUint a0 <> putUint a1 <> putFixed a2 <> putFixed a3 <> putFixed a4 <> putFixed a5)
+
+-- | river_fx_v1.set_dim (opcode 8)
+riverFxV1SetDim :: Conn -> ObjectId -> ObjectId -> Word32 -> IO ()
+riverFxV1SetDim c self a0 a1 = sendRequest c self 8 (putObj a0 <> putUint a1)
+
+-- | river_fx_v1.set_close_scale (opcode 9)
+riverFxV1SetCloseScale :: Conn -> ObjectId -> ObjectId -> Word32 -> IO ()
+riverFxV1SetCloseScale c self a0 a1 = sendRequest c self 9 (putObj a0 <> putUint a1)
+
+-- | river_fx_v1.set_resize_fade (opcode 10)
+riverFxV1SetResizeFade :: Conn -> ObjectId -> ObjectId -> Word32 -> IO ()
+riverFxV1SetResizeFade c self a0 a1 = sendRequest c self 10 (putObj a0 <> putUint a1)
+
+-- | river_fx_v1.set_layer_fade (opcode 11)
+riverFxV1SetLayerFade :: Conn -> ObjectId -> ByteString -> Word32 -> IO ()
+riverFxV1SetLayerFade c self a0 a1 = sendRequest c self 11 (putString a0 <> putUint a1)
+
+-- | river_fx_v1.set_popup_blur (opcode 12)
+riverFxV1SetPopupBlur :: Conn -> ObjectId -> Word32 -> Word32 -> IO ()
+riverFxV1SetPopupBlur c self a0 a1 = sendRequest c self 12 (putUint a0 <> putUint a1)
 
