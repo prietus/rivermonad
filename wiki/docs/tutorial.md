@@ -10,7 +10,8 @@ With no configuration file, rivermonad uses xmonad's defaults with **Super**
 as the modifier: `Super+Shift+Enter` opens a terminal (`foot`),
 `Super+P` a launcher (fuzzel, bemenu or wmenu, whichever exists),
 `Super+J`/`Super+K` move the focus, `Super+Space` changes layout and
-`Super+1…9` change workspace. The whole list is in [Default keys](keys.md).
+`Super+1…9` change workspace. The whole list is in [Default keys](keys.md), and on
+`Super+Shift+/` in a menu.
 
 ## 2. A first configuration
 

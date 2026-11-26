@@ -14,6 +14,7 @@ import Rivermonad.Actions.Submap
 import Rivermonad.Actions.UpdatePointer
 import Rivermonad.Actions.WindowBringer
 import Rivermonad.Actions.WindowGo
+import Rivermonad.Actions.WithAll
 import Rivermonad.Hooks.InsertPosition
 import Rivermonad.Hooks.ManageHelpers
 import Rivermonad.Hooks.OnPropertyChange
@@ -179,6 +180,7 @@ myKeys =
     -- even if you move on while they load
   , ("M-p",         "Launcher (fuzzel)",                    spawnHere "fuzzel")
   , ("M-`",         "Scratchpad terminal",                  namedScratchpadAction scratchpads "term")
+  , ("M-S-t",       "Tile every floating window here",      sinkAll)
   , ("M-S-o",       "Hide the window",                      withFocused minimizeWindow)
   , ("M-o",         "Bring back the last hidden window",    withLastMinimized maximizeWindowAndFocus)
   , ("M-C-o",       "Bring back a hidden window (fuzzel)",  restoreMenu)

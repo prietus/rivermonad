@@ -101,8 +101,9 @@ the emoji picker. The terminal uses *Ubuntu Mono derivative Powerline* (from
 
 ## Keys
 
-`Super+F1` lists every key with what it does, in fuzzel (and runs the one
-you pick). The main ones:
+`Super+F1` (or `Super+?`) lists every key with what it does, in fuzzel (and
+runs the one you pick): the ones of this configuration first, then
+rivermonad's defaults. The main ones:
 
 | Keys | Action |
 |---|---|

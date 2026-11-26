@@ -7,7 +7,7 @@
 %{?haskell_setup}
 
 Name:           %{pkg_name}
-Version:        0.6.2
+Version:        0.6.3
 Release:        1%{?dist}
 Summary:        Xmonad-style tiling window manager for the river Wayland compositor
 
@@ -234,6 +234,11 @@ desktop-file-validate %{buildroot}%{_datadir}/wayland-sessions/%{name}.desktop
 
 
 %changelog
+* Thu Nov 26 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.6.3-1
+- A cheat sheet of the default keys in a menu, on mod-shift-/ (mod-?);
+  with NamedActions it also lists your own keys
+- Rivermonad.Actions.WithAll: sinkAll, killAll, withAll
+
 * Thu Nov 26 2026 Carlos Prieto Ortiz <prietus@live.com> - 0.6.2-1
 - More effects on river-fx: the look of the blur (fxBlurParams), an
   opacity per application (fxOpacityRules), a glow around the focused

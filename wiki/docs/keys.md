@@ -2,8 +2,13 @@
 
 The defaults are xmonad's, with `M` = the `modMask`, which is **Super**
 (`mod4Mask`) by default (xmonad uses Alt). Add or replace keys with
-[`EZConfig`](modules/util/EZConfig.md); for a cheat sheet of your own keys,
-see [`NamedActions`](modules/util/NamedActions.md).
+[`EZConfig`](modules/util/EZConfig.md).
+
+`M-S-/` (that is, `M-?`) shows this table in a menu (fuzzel, bemenu or
+wmenu, the first installed): type to filter it, and Enter runs the key
+picked. It lists the defaults; describe your own keys with
+[`NamedActions`](modules/util/NamedActions.md) and the same menu shows them
+too, followed by the defaults they have not replaced.
 
 | Keys | Action |
 |---|---|
@@ -19,7 +24,7 @@ see [`NamedActions`](modules/util/NamedActions.md).
 | `M-Return` | swap the focused window with the master |
 | `M-S-j`, `M-S-k` | swap the focused window with the next / previous one |
 | `M-h`, `M-l` | shrink / expand the master area |
-| `M-t` | put a floating window back into tiling |
+| `M-t` | put a floating window back into tiling (all of them: [`sinkAll`](modules/actions/WithAll.md)) |
 | `M-f` | full screen (toggle) |
 | `M-,`, `M-.` | one more / one fewer window in the master area |
 | `M-1` … `M-9` | go to workspace N |
@@ -28,6 +33,7 @@ see [`NamedActions`](modules/util/NamedActions.md).
 | `M-S-w`, `M-S-e`, `M-S-r` | move the focused window to screen 1, 2, 3 |
 | `M-q` | recompile the configuration and restart |
 | `M-S-q` | end the session (see [logging out](configuration.md#logging-out)) |
+| `M-S-/` | this cheat sheet, in a menu (`defaultKeysMenu`) |
 
 ## Mouse
 

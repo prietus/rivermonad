@@ -113,6 +113,7 @@ the `XMonad.` prefix replaced by `Rivermonad.` (each one is documented on
 | `Rivermonad.Actions.SpawnOn` | `spawnHere`, `spawnOn "web"` with `manageSpawn`: open where it was started |
 | `Rivermonad.Actions.UpdatePointer` | `updatePointer (0.5, 0.5) (1, 1)` in the log hook: the pointer follows the focus |
 | `Rivermonad.Actions.MostRecentlyUsed` | `focusPreviousWindow`, `mruMenu`: windows by recent use |
+| `Rivermonad.Actions.WithAll` | `sinkAll`: every floating window back into the layout; `killAll`, `withAll` |
 | `Rivermonad.Actions.Submap` | `submapP`, `modeP`: key sequences and modes (`M-r` then `h`/`l`) |
 | `Rivermonad.Hooks.RefocusLast` | `refocusLast`: closing a window focuses the one used before it |
 | `Rivermonad.Hooks.OnPropertyChange` | `onTitleChange`, `onAppIdChange`: rules for windows that rename themselves |

@@ -8,7 +8,10 @@
 --
 -- @M-<F1>@ opens the list ("M-b    Firefox (focus or start)"); typing
 -- filters it and Enter runs the chosen action, so it doubles as a command
--- palette. The keys are added like 'additionalKeysP' does.
+-- palette. The keys are added like 'additionalKeysP' does. After your keys
+-- the list goes on with the default ones you have not replaced, so it is a
+-- cheat sheet of everything; the default cheat sheet key, @M-S-\/@ (see
+-- "Rivermonad.Config"), shows this same list.
 --
 -- Every action can also be run from scripts over IPC, by its key or its
 -- description (they are added to 'ipcActions'):
@@ -21,25 +24,32 @@ module Rivermonad.Util.NamedActions
   ) where
 
 import qualified Data.Map.Strict as M
+import Data.Maybe (mapMaybe)
 
+import Rivermonad.Config (defaultKeysRows, helpKeys, keysMenu)
 import Rivermonad.Core
-import Rivermonad.Util.Dmenu (menuArgs)
-import Rivermonad.Util.EZConfig (additionalKeysP)
+import Rivermonad.Util.EZConfig (mkKeymap, readKey)
 
--- | Add described keys, and a key that shows them all.
+-- | Add described keys, and a key that shows them all, followed by the
+-- default keys they have not replaced. The default cheat sheet key
+-- (@mod-shift-\/@) shows the same list.
 addDescrKeysP :: String -> XConfig -> [(String, String, X ())] -> XConfig
-addDescrKeysP helpKey conf ks =
-  (additionalKeysP conf ((helpKey, showKeysMenu ks) : [ (k, a) | (k, _, a) <- ks ]))
-    { ipcActions = ipcActions conf ++ concat [ [(k, a), (d, a)] | (k, d, a) <- ks ]
-                                   ++ [(helpKey, showKeysMenu ks)] }
-
--- | The cheat sheet: pick an entry to run it.
-showKeysMenu :: [(String, String, X ())] -> X ()
-showKeysMenu ks = menuArgs "fuzzel" ["--dmenu", "--no-sort", "--prompt", "keys › ", "--width", "60"] (map fst entries) $ \c ->
-  maybe (pure ()) id (M.lookup c (M.fromList entries))
+addDescrKeysP helpKey conf ks = conf
+  { keys = \cc -> M.unions
+      [ mkKeymap cc [ (k, a) | (k, _, a) <- ks ]
+      , mkKeymap cc [(helpKey, help)]
+      , M.fromList [ (k, help) | k <- helpKeys cc ]
+      , keys conf cc ]
+  , ipcActions = ipcActions conf ++ concat [ [(k, a), (d, a)] | (k, d, a) <- ks ]
+                                 ++ [(helpKey, help)] }
   where
-    width = maximum (0 : [ length (pretty k) | (k, _, _) <- ks ])
-    entries = [ (pretty k ++ replicate (width - length (pretty k) + 3) ' ' ++ d, a) | (k, d, a) <- ks ]
+    help = asks config >>= \cc ->
+      let mine = mapMaybe (readKey cc) (helpKey : [ k | (k, _, _) <- ks ])
+      in keysMenu ([ (pretty k, d, a) | (k, d, a) <- ks ] ++ defaultKeysRows cc (mine ++ helpKeys cc))
+
+-- | The cheat sheet of just these keys: pick an entry to run it.
+showKeysMenu :: [(String, String, X ())] -> X ()
+showKeysMenu ks = keysMenu [ (pretty k, d, a) | (k, d, a) <- ks ]
 
 -- | "M-S-<Return>" -> "Super+Shift+Return".
 pretty :: String -> String
